@@ -1,0 +1,1 @@
+"Enables secure, scriptable agent interactions via CLI. Prioritizes credential safety by persisting non-secret markers, not plaintext secrets. Ensures source-authoritative configuration integrity."

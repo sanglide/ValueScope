@@ -1,0 +1,34 @@
+# Agent role definitions for ValueGuard
+
+profiler:
+  role: "Value Profile Analyst"
+  goal: "Build accurate project value baselines from historical data"
+  skills:
+    - doc_collector
+    - llm_call
+    - json_parser
+    - value_model
+  memory_access:
+    - project_profile
+    - analysis_history
+
+hypothesis:
+  role: "Cross-Layer Value Reasoner"
+  goal: "Generate structured value hypotheses using four-layer reasoning"
+  skills:
+    - value_model
+    - llm_call
+    - json_parser
+  memory_access:
+    - project_profile
+    - pattern_memory
+
+evidence:
+  role: "Code Evidence Locator"
+  goal: "Verify value hypotheses with precise code evidence"
+  skills:
+    - vector_search
+    - ast_analysis
+    - code_chunking
+  memory_access:
+    - pattern_memory

@@ -1,0 +1,170 @@
+[
+  {
+    "model": "claude-sonnet-4-5",
+    "display_name": "Claude-3.5-Sonnet",
+    "total_samples": 157,
+    "hypotheses_generated": 0,
+    "confirmation_rate": 0.0,
+    "avg_confidence": 0.0,
+    "before_filter": {
+      "percent_agreement": 0.7579617834394905,
+      "cohen_kappa": 0.0,
+      "pabak": 0.515923566878981,
+      "gwet_ac1": 0.6925534656016491,
+      "jaccard": 0.7579617834394905,
+      "symmetric_f1": 0.7579617834394905
+    },
+    "after_filter": {
+      "percent_agreement": 0.7579617834394905,
+      "cohen_kappa": 0.0,
+      "pabak": 0.515923566878981,
+      "gwet_ac1": 0.6925534656016491,
+      "jaccard": 0.7579617834394905,
+      "symmetric_f1": 0.7579617834394905
+    },
+    "delta": {
+      "kappa": 0.0,
+      "jaccard": 0.0
+    }
+  },
+  {
+    "model": "gpt-5.2",
+    "display_name": "GPT-5.2",
+    "total_samples": 157,
+    "hypotheses_generated": 388,
+    "confirmation_rate": 0.5581717451523546,
+    "avg_confidence": 1.0,
+    "before_filter": {
+      "percent_agreement": 0.267515923566879,
+      "cohen_kappa": 0.016558636091290345,
+      "pabak": -0.46496815286624205,
+      "gwet_ac1": -0.39934121294322805,
+      "jaccard": 0.07340764331210191,
+      "symmetric_f1": 0.09762410271964413
+    },
+    "after_filter": {
+      "percent_agreement": 0.3630573248407643,
+      "cohen_kappa": 0.05750990515067836,
+      "pabak": -0.2738853503184714,
+      "gwet_ac1": -0.2652107341445726,
+      "jaccard": 0.19543524416135882,
+      "symmetric_f1": 0.21464968152866243
+    },
+    "delta": {
+      "kappa": 0.040951269059388014,
+      "jaccard": 0.12202760084925691
+    }
+  },
+  {
+    "model": "grok-4",
+    "display_name": "Grok-4",
+    "total_samples": 157,
+    "hypotheses_generated": 77,
+    "confirmation_rate": 0.6435643564356436,
+    "avg_confidence": 1.0,
+    "before_filter": {
+      "percent_agreement": 0.6496815286624203,
+      "cohen_kappa": 0.10155030693996456,
+      "pabak": 0.2993630573248407,
+      "gwet_ac1": 0.4267219917012448,
+      "jaccard": 0.5605095541401274,
+      "symmetric_f1": 0.5605095541401274
+    },
+    "after_filter": {
+      "percent_agreement": 0.6560509554140127,
+      "cohen_kappa": 0.009347978499648966,
+      "pabak": 0.3121019108280254,
+      "gwet_ac1": 0.4737103482525296,
+      "jaccard": 0.6050955414012739,
+      "symmetric_f1": 0.6050955414012739
+    },
+    "delta": {
+      "kappa": -0.09220232844031559,
+      "jaccard": 0.04458598726114649
+    }
+  },
+  {
+    "model": "gemini-2.5-flash",
+    "display_name": "Gemini-2.5-Flash",
+    "total_samples": 157,
+    "hypotheses_generated": 462,
+    "confirmation_rate": 0.7383627608346709,
+    "avg_confidence": 1.0,
+    "before_filter": {
+      "percent_agreement": 0.2611464968152866,
+      "cohen_kappa": 0.0036108983477404553,
+      "pabak": -0.47770700636942676,
+      "gwet_ac1": -0.41518377496308967,
+      "jaccard": 0.03808260034374684,
+      "symmetric_f1": 0.046228894955009606
+    },
+    "after_filter": {
+      "percent_agreement": 0.31210191082802546,
+      "cohen_kappa": 0.038230289279636995,
+      "pabak": -0.37579617834394907,
+      "gwet_ac1": -0.34177415525836835,
+      "jaccard": 0.0881356789000101,
+      "symmetric_f1": 0.09428268122535638
+    },
+    "delta": {
+      "kappa": 0.03461939093189654,
+      "jaccard": 0.050053078556263265
+    }
+  },
+  {
+    "model": "deepseek-chat",
+    "display_name": "DeepSeek-V3",
+    "total_samples": 157,
+    "hypotheses_generated": 435,
+    "confirmation_rate": 0.4942233632862644,
+    "avg_confidence": 1.0,
+    "before_filter": {
+      "percent_agreement": 0.2356687898089172,
+      "cohen_kappa": -0.012794323191054691,
+      "pabak": -0.5286624203821656,
+      "gwet_ac1": -0.448228149742486,
+      "jaccard": 0.02076129814983318,
+      "symmetric_f1": 0.033196845617227785
+    },
+    "after_filter": {
+      "percent_agreement": 0.4840764331210191,
+      "cohen_kappa": 0.14976265293842342,
+      "pabak": -0.031847133757961776,
+      "gwet_ac1": -0.029174928175454164,
+      "jaccard": 0.2835456475583864,
+      "symmetric_f1": 0.2929936305732484
+    },
+    "delta": {
+      "kappa": 0.16255697612947811,
+      "jaccard": 0.2627843494085532
+    }
+  },
+  {
+    "model": "qwen-plus",
+    "display_name": "Qwen-Plus",
+    "total_samples": 157,
+    "hypotheses_generated": 308,
+    "confirmation_rate": 0.7165932452276065,
+    "avg_confidence": 1.0,
+    "before_filter": {
+      "percent_agreement": 0.5477707006369427,
+      "cohen_kappa": 0.23822866124513084,
+      "pabak": 0.09554140127388533,
+      "gwet_ac1": 0.10079457911507277,
+      "jaccard": 0.3227176220806794,
+      "symmetric_f1": 0.32781316348195333
+    },
+    "after_filter": {
+      "percent_agreement": 0.5477707006369427,
+      "cohen_kappa": 0.23822866124513084,
+      "pabak": 0.09554140127388533,
+      "gwet_ac1": 0.10079457911507277,
+      "jaccard": 0.32059447983014866,
+      "symmetric_f1": 0.32377919320594484
+    },
+    "delta": {
+      "kappa": 0.0,
+      "jaccard": -0.0021231422505307296
+    }
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "repo": "Signal-Android",
+  "model": "deepseek-chat",
+  "l2_scores": {
+    "HV1": 0.3,
+    "HV2": 0.4,
+    "HV3": 0.7,
+    "HV4": 0.6,
+    "HV5": 0.8,
+    "HV6": 0.9,
+    "HV7": 0.8,
+    "HV8": 0.2,
+    "HV9": 1.0,
+    "HV10": 0.9
+  },
+  "l3_scores": {
+    "SV1": 0.9,
+    "SV2": 0.8,
+    "SV3": 0.7,
+    "SV4": 0.6,
+    "SV5": 0.8,
+    "SV6": 0.5,
+    "SV7": 0.1,
+    "SV8": 0.7,
+    "SV9": 0.4,
+    "SV10": 0.7
+  },
+  "core_values": [
+    "HV9",
+    "HV10",
+    "HV6"
+  ],
+  "evidence": [
+    {
+      "value_id": "HV9",
+      "quote": "Signal is a simple, powerful, and secure messenger... Signal’s advanced privacy-preserving technology is always enabled",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "HV10",
+      "quote": "Signal is a simple, powerful, and secure messenger that uses your phone's data connection to communicate securely",
+      "confidence": 0.9
+    },
+    {
+      "value_id": "HV6",
+      "quote": "Our General Public Licenses are designed to make sure that you have the freedom to distribute copies of free software... that you can change the software or use pieces of it in new free programs",
+      "confidence": 0.85
+    },
+    {
+      "value_id": "HV5",
+      "quote": "Have something you want to say about Signal projects or want to be part of the conversation? Get involved in the community forum",
+      "confidence": 0.8
+    },
+    {
+      "value_id": "SV1",
+      "quote": "Signal’s advanced privacy-preserving technology is always enabled, so you can focus on sharing the moments that matter",
+      "confidence": 0.85
+    }
+  ],
+  "_cached": true
+}

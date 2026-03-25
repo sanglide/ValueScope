@@ -1,0 +1,35 @@
+{
+  "repo": "focus-android",
+  "model": "claude-sonnet-4-5",
+  "l2_scores": {
+    "HV1": 0.0,
+    "HV2": 0.0,
+    "HV3": 0.0,
+    "HV4": 0.0,
+    "HV5": 0.0,
+    "HV6": 0.0,
+    "HV7": 0.0,
+    "HV8": 0.0,
+    "HV9": 0.0,
+    "HV10": 0.0
+  },
+  "l3_scores": {
+    "SV1": 0.0,
+    "SV2": 0.0,
+    "SV3": 0.0,
+    "SV4": 0.0,
+    "SV5": 0.0,
+    "SV6": 0.0,
+    "SV7": 0.0,
+    "SV8": 0.0,
+    "SV9": 0.0,
+    "SV10": 0.0
+  },
+  "core_values": [
+    "HV1",
+    "HV2",
+    "HV3"
+  ],
+  "evidence": [],
+  "raw_response": "# Firefox Focus for Android - Value Profile Analysis\n\n## Project Overview\nFirefox Focus is a privacy-focused mobile browser for Android that automatically blocks trackers and provides easy history/data erasure. It emphasizes user privacy, simplicity, and performance.\n\n## Value Profile\n\n### Human Values (L2)\n\n**HV1 (Conformity): HIGH**\n- Adheres to Mozilla Public License 2.0\n- Follows Mozilla Community Participation Guidelines\n- Implements standard Android development practices\n- Uses established content blocking lists (Disconnect)\n- Complies with Google Play Store requirements\n\n**HV2 (Pleasure): MEDIUM**\n- Simple, streamlined browsing experience\n- \"Browse like no one's watching\" tagline emphasizes stress-free usage\n- Quick erase functionality provides satisfaction\n- Minimal UI reduces cognitive load\n- Fast performance due to ad/tracker blocking\n\n**HV3 (Dignity): HIGH**\n- Respects user autonomy in privacy choices\n- No judgment or tracking of browsing behavior\n- Transparent about data collection (opt-in/opt-out)\n- Empowers users to control their digital footprint\n\n**HV4 (Inclusiveness): HIGH**\n- Localized in multiple languages via Pontoon\n- Supports various Android devices and OS versions\n- Accessibility features for users with special needs\n- Open source - anyone can contribute\n- \"Good first issue\" labels for new contributors\n- Available in regions with bandwidth constraints (small APK size)\n\n**HV5 (Sense_of_Belonging): MEDIUM**\n- Active community participation through GitHub\n- Public mailing lists for discussion\n- Beta/Nightly programs for engaged users\n- Open contribution model fosters community\n\n**HV6 (Freedom): HIGH**\n- Users can choose default search engine\n- Optional features (ad blocking, tracker blocking, etc.)\n- Can disable telemetry\n- No forced account creation\n- Open source allows forking/modification\n- Manual APK downloads available\n\n**HV7 (Independence): HIGH**\n- No dependency on Mozilla accounts\n- Can function without Google Play Services\n- Self-hosted telemetry (Sentry) on Mozilla servers\n- No third-party analytics services\n- Minimal external dependencies\n\n**HV8 (Wealth): HIGH**\n- Completely free application\n- No in-app purchases or subscriptions\n- Reduces data costs by blocking ads/trackers\n- Small APK size saves storage and bandwidth\n- No hidden costs\n\n**HV9 (Privacy): VERY HIGH**\n- Core mission is privacy protection\n- Automatic tracker blocking (ads, analytics, social)\n- Easy history/cookie/password erasure\n- Telemetry opt-out (Klar) or opt-in (Focus)\n- No PII collection in crash reports\n- Stealth mode available\n- Content blocking prevents tracking\n- Mozilla-hosted telemetry (no third parties)\n\n**HV10 (Security): HIGH**\n- Regular security updates\n- Uses Android WebView security features\n- Content blocking reduces attack surface\n- Crash reporting helps identify vulnerabilities\n- Code reviews required for contributions\n- Security issue reporting process documented\n\n### System Values (L3)\n\n**SV1 (Trust): HIGH**\n- Open source - code is auditable\n- Mozilla brand reputation\n- Transparent telemetry documentation\n- Clear privacy policy\n- Community-driven development\n- Regular updates and maintenance\n\n**SV2 (Correctness): HIGH**\n- Automated testing (unit tests, UI tests)\n- Code quality tools (detekt, ktlint, lint)\n- Pre-push hooks recommended\n- CI/CD pipeline validation\n- QA process before releases\n- Issue tracking and triage process\n\n**SV3 (Compatibility): HIGH**\n- Supports multiple Android versions (API 22-26+)\n- ARM and x86 architectures\n- Various device types (phones, tablets)\n- Works with different screen sizes/densities\n- Compatible with Android WebView and GeckoView engines\n\n**SV4 (Portability): MEDIUM**\n- Android-specific implementation\n- APK available for manual installation\n- Can be sideloaded\n- Settings can be configured per device\n- Limited to Android platform\n\n**SV5 (Reliability): HIGH**\n- Crash reporting via Sentry\n- Automated testing suite\n- Gradual rollout strategy for releases\n- Beta testing before production\n- Issue tracking and resolution process\n- Battery and performance profiling tools\n\n**SV6 (Efficiency): HIGH**\n- Small APK size (~3MB for WebView version)\n- Fast page loading due to content blocking\n- Minimal memory footprint\n- Quick erase functionality\n- Optimized for performance\n- Battery usage monitoring\n\n**SV7 (Energy_Preservation): HIGH**\n- Blocks resource-intensive ads/trackers\n- Battery debugging documentation\n- Foreground service optimization\n- CPU profiling to identify issues\n- Reduced network activity from blocking\n\n**SV8 (Usability): HIGH**\n- Simple, focused interface\n- One-tap erase functionality\n- Homescreen tips for feature discovery\n- Autocomplete for frequent sites\n- Long-press shortcuts\n- Pull-to-refresh\n- Multitasking support\n\n**SV9 (Accessibility): MEDIUM-HIGH**\n- Accessibility compliance in generated code\n- Support for various languages\n- Screen reader compatibility considerations\n- Configurable text sizes\n- High contrast support through Android system\n\n**SV10 (Longevity): MEDIUM-HIGH**\n- Active development and maintenance\n- Regular release schedule\n- Long-term Mozilla commitment\n- Community contribution model\n- Documentation for future developers\n- Architecture decision records (ADRs)\n- Modular design for maintainability\n\n## Key Value Tensions\n\n1. **Privacy vs. Functionality**: Aggressive blocking may break some websites\n2. **Simplicity vs. Features**: Maintaining minimal UI while adding capabilities\n3. **Independence vs. Compatibility**: Using WebView (Google) vs. GeckoView (Mozilla)\n4. **Openness vs. Security**: Open source code vs. potential vulnerability exposure\n\n## Dominant Value Themes\n\nThe project strongly prioritizes:\n1. **Privacy (HV9)** - Core mission and differentiator\n2. **Freedom (HV6)** - User choice and control\n3. **Efficiency (SV6)** - Performance and simplicity\n4. **Inclusiveness (HV4)** - Accessibility and localization\n5. **Trust (SV1)** - Transparency and open source"
+}

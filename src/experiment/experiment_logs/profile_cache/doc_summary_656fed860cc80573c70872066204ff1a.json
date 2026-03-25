@@ -1,0 +1,1 @@
+"Choose based on timing precision versus contextual awareness. Use cron for exact, isolated tasks. Use heartbeats for batched, context-aware monitoring to optimize efficiency."

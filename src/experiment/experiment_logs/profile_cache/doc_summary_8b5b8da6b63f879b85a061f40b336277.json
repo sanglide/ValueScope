@@ -1,0 +1,1 @@
+"Manages exec approvals to enforce security and control. Uses allowlists to regulate command execution across hosts."

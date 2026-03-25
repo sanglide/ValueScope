@@ -1,0 +1,1 @@
+"Uses a dedicated Signal number for the bot to ensure clear separation and prevent message loops. Employs a pairing-based DM policy for controlled access. Prioritizes deterministic routing and secure, isolated session handling."

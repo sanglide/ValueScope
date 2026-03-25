@@ -1,0 +1,11 @@
+layer,value_id,value_name,schwartz_mapping,paper_definition,mapping_notes
+L3,SV1,Trust,Conformity – Interpersonal,Compelling users to believe that an application is harmless.,Reported by authors as indirectly related to interpersonal conformity.
+L3,SV2,Correctness,None,Ensuring that the application provides expected information and behavior.,Authors report no clear corresponding Schwartz value.
+L3,SV3,Compatibility,Power – Resources,Supporting a range of user devices and operating systems.,Mapped due to relation with access to technical resources.
+L3,SV4,Portability,Self-direction – Action; Power – Resources,Allowing the application to be migrated to other devices.,Reported as having a primary and secondary mapping.
+L3,SV5,Reliability,None,Reducing the occurrence of application failures.,Authors explicitly state difficulty mapping to Schwartz values.
+L3,SV6,Efficiency,Power – Resources,Reducing the time and effort required to perform tasks within the application.,Mapped due to efficient use of user resources.
+L3,SV7,Energy_Preservation,Power – Resources,Reducing power or energy consumption during application use.,Explicitly related to resource conservation.
+L3,SV8,Usability,Benevolence – Caring,Improving the ease of use of the application.,Mapped as supporting users’ well-being and ease.
+L3,SV9,Accessibility,Benevolence – Caring; Universalism – Concern,"Improving access to information or functionality, particularly for users with special needs.",Authors note multiple plausible mappings.
+L3,SV10,Longevity,Security – Personal,Ensuring prolonged availability of the application in the future.,Related to users’ sense of future assurance.

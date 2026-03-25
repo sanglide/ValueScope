@@ -1,0 +1,341 @@
+{
+  "model": "qwen-plus",
+  "total_samples": 1165,
+  "code_samples": 68,
+  "text_samples": 1097,
+  "iaa_cache_dir": "/Users/jerry/Desktop/value/value_hypothesis_bot/src/experiment/experiment_logs/llm_outputs",
+  "alpha_values": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    1.5,
+    2.0
+  ],
+  "threshold": 0.5,
+  "target_metric": "Value F1",
+  "optimal_alpha": 0,
+  "profile_match_stats": {
+    "project_profile": 832,
+    "uniform_prior": 333
+  },
+  "sweep_results": {
+    "0": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3048,
+        "Value R": 0.7736,
+        "Value F1": 0.4373,
+        "Jaccard": 0.2676,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.101,
+        "Value R": 0.78,
+        "Value F1": 0.1788,
+        "Jaccard": 0.1347,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1133,
+        "Value R": 0.779,
+        "Value F1": 0.1978,
+        "Jaccard": 0.1425,
+        "n": 1165
+      }
+    },
+    "0.25": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3048,
+        "Value R": 0.7736,
+        "Value F1": 0.4373,
+        "Jaccard": 0.2676,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.101,
+        "Value R": 0.78,
+        "Value F1": 0.1788,
+        "Jaccard": 0.1347,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1133,
+        "Value R": 0.779,
+        "Value F1": 0.1978,
+        "Jaccard": 0.1425,
+        "n": 1165
+      }
+    },
+    "0.5": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3034,
+        "Value R": 0.7642,
+        "Value F1": 0.4343,
+        "Jaccard": 0.2651,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.1002,
+        "Value R": 0.7634,
+        "Value F1": 0.1772,
+        "Jaccard": 0.1341,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1126,
+        "Value R": 0.7635,
+        "Value F1": 0.1962,
+        "Jaccard": 0.1418,
+        "n": 1165
+      }
+    },
+    "0.75": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3113,
+        "Value R": 0.7547,
+        "Value F1": 0.4408,
+        "Jaccard": 0.2906,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.099,
+        "Value R": 0.7394,
+        "Value F1": 0.1746,
+        "Jaccard": 0.1328,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1117,
+        "Value R": 0.7419,
+        "Value F1": 0.1941,
+        "Jaccard": 0.142,
+        "n": 1165
+      }
+    },
+    "1.0": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3056,
+        "Value R": 0.7264,
+        "Value F1": 0.4302,
+        "Jaccard": 0.2815,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.0984,
+        "Value R": 0.732,
+        "Value F1": 0.1735,
+        "Jaccard": 0.1323,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1106,
+        "Value R": 0.7311,
+        "Value F1": 0.1921,
+        "Jaccard": 0.141,
+        "n": 1165
+      }
+    },
+    "1.5": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3056,
+        "Value R": 0.7264,
+        "Value F1": 0.4302,
+        "Jaccard": 0.2815,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.098,
+        "Value R": 0.7283,
+        "Value F1": 0.1727,
+        "Jaccard": 0.1321,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1102,
+        "Value R": 0.728,
+        "Value F1": 0.1914,
+        "Jaccard": 0.1408,
+        "n": 1165
+      }
+    },
+    "2.0": {
+      "code": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3056,
+        "Value R": 0.7264,
+        "Value F1": 0.4302,
+        "Jaccard": 0.2815,
+        "n": 68
+      },
+      "text": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.0978,
+        "Value R": 0.7264,
+        "Value F1": 0.1723,
+        "Jaccard": 0.1318,
+        "n": 1097
+      },
+      "overall": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.11,
+        "Value R": 0.7264,
+        "Value F1": 0.1911,
+        "Jaccard": 0.1405,
+        "n": 1165
+      }
+    }
+  },
+  "comparison": {
+    "code": {
+      "n": 68,
+      "baseline": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3048,
+        "Value R": 0.7736,
+        "Value F1": 0.4373,
+        "Jaccard": 0.2676
+      },
+      "optimal": {
+        "Risk P": 0.5882,
+        "Risk R": 1.0,
+        "Risk F1": 0.7407,
+        "Value P": 0.3048,
+        "Value R": 0.7736,
+        "Value F1": 0.4373,
+        "Jaccard": 0.2676
+      },
+      "delta": {
+        "Risk P": 0.0,
+        "Risk R": 0.0,
+        "Risk F1": 0.0,
+        "Value P": 0.0,
+        "Value R": 0.0,
+        "Value F1": 0.0,
+        "Jaccard": 0.0
+      }
+    },
+    "text": {
+      "n": 1097,
+      "baseline": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.101,
+        "Value R": 0.78,
+        "Value F1": 0.1788,
+        "Jaccard": 0.1347
+      },
+      "optimal": {
+        "Risk P": 0.3471,
+        "Risk R": 0.9864,
+        "Risk F1": 0.5135,
+        "Value P": 0.101,
+        "Value R": 0.78,
+        "Value F1": 0.1788,
+        "Jaccard": 0.1347
+      },
+      "delta": {
+        "Risk P": 0.0,
+        "Risk R": 0.0,
+        "Risk F1": 0.0,
+        "Value P": 0.0,
+        "Value R": 0.0,
+        "Value F1": 0.0,
+        "Jaccard": 0.0
+      }
+    },
+    "overall": {
+      "n": 1165,
+      "baseline": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1133,
+        "Value R": 0.779,
+        "Value F1": 0.1978,
+        "Jaccard": 0.1425
+      },
+      "optimal": {
+        "Risk P": 0.3618,
+        "Risk R": 0.9877,
+        "Risk F1": 0.5296,
+        "Value P": 0.1133,
+        "Value R": 0.779,
+        "Value F1": 0.1978,
+        "Jaccard": 0.1425
+      },
+      "delta": {
+        "Risk P": 0.0,
+        "Risk R": 0.0,
+        "Risk F1": 0.0,
+        "Value P": 0.0,
+        "Value R": 0.0,
+        "Value F1": 0.0,
+        "Jaccard": 0.0
+      }
+    }
+  }
+}

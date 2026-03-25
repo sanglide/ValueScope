@@ -1,0 +1,11 @@
+layer,value_id,value_name,schwartz_mapping,paper_definition,context_scope,notes
+L2,HV1,Conformity,Conformity-Rules,"Adhering to rules, regulations, guidelines, or commonly accepted standards during application use or development.",User discussion in issue tracking systems,Defined as a human value theme derived from issue discussions.
+L2,HV2,Pleasure,Hedonism,Providing enjoyment and satisfaction to users when using the application.,User experience and feature-related discussions,Interpreted as experiential enjoyment rather than technical quality.
+L2,HV3,Dignity,Face,"Maintaining users’ sense of dignity, respect, and personal worth when interacting with the application.",User-facing interactions and representations,Often related to how users are treated or represented.
+L2,HV4,Inclusiveness,Universalism-Convern,"Enabling people from different backgrounds, languages, cultures, or knowledge levels to use the application.",Localization and accessibility-related discussions,Explicitly framed as social inclusion.
+L2,HV5,Sense_of_Belonging,Security-Personal,Supporting users’ feeling of being connected to a group or community through the application.,Social interaction and communication features,Often observed in messaging or group-related features.
+L2,HV6,Freedom,Self-direction - Action,"Providing users with options and choices, and avoiding forced dependencies on specific services or workflows.",User preference and configurability discussions,Closely related to user autonomy.
+L2,HV7,Independence,Self-direction - Action,Reducing dependency on third-party services or external systems.,Architecture and dependency discussions,Concerns technical and organizational independence.
+L2,HV8,Wealth,Power - Resources,Considering the monetary or economic cost associated with using the application.,Cost- and resource-related user discussions,Includes data usage and financial burden.
+L2,HV9,Privacy,Self-direction - Action,Protecting users’ personal information and addressing concerns about data collection or tracking.,Personal data and information handling discussions,Explicitly framed around personal data protection.
+L2,HV10,Security,Security-Personal,Protecting users from external threats or attacks when using the application.,Application-level security concerns,Focused on personal and application security rather than abstract system safety.

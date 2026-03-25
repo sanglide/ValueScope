@@ -1,0 +1,1 @@
+"Automates issue management by marking inactive items stale after 180 days, then closing them after 7 days if no activity. Prioritizes focus by exempting important labels like \"feature request\" and \"pin\" from this process."

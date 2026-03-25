@@ -1,0 +1,1 @@
+"Defaults to host-local timestamps for clarity, preserves provider-native times for tool integrity, and uses user timezone only in prompts for consistency."

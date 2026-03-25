@@ -1,0 +1,1 @@
+"Enables secure, sandboxed remote command execution on non-macOS machines via a headless node. Access is scoped and explicit, guarded by exec approvals and agent allowlists."

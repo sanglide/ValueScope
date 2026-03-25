@@ -1,0 +1,30 @@
+[
+  {
+    "model": "qwen-plus",
+    "display_name": "Qwen-Plus",
+    "total_samples": 157,
+    "hypotheses_generated": 553,
+    "confirmation_rate": 0.7305605786618445,
+    "avg_confidence": 0.6191681735985534,
+    "before_filter": {
+      "percent_agreement": 0.5923566878980892,
+      "cohen_kappa": 0.27733026467203675,
+      "pabak": 0.1847133757961783,
+      "gwet_ac1": 0.19904344360302909,
+      "jaccard": 0.37123142250530783,
+      "symmetric_f1": 0.3759175007582651
+    },
+    "after_filter": {
+      "percent_agreement": 0.5923566878980892,
+      "cohen_kappa": 0.27733026467203675,
+      "pabak": 0.1847133757961783,
+      "gwet_ac1": 0.19904344360302909,
+      "jaccard": 0.37303609341825905,
+      "symmetric_f1": 0.37791932059447986
+    },
+    "delta": {
+      "kappa": 0.0,
+      "jaccard": 0.0018046709129512228
+    }
+  }
+]

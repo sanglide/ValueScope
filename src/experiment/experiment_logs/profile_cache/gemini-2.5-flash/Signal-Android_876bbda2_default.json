@@ -1,0 +1,61 @@
+{
+  "repo": "Signal-Android",
+  "model": "gemini-2.5-flash",
+  "l2_scores": {
+    "HV1": 0.6,
+    "HV2": 0.3,
+    "HV3": 0.7,
+    "HV4": 0.5,
+    "HV5": 0.8,
+    "HV6": 1.0,
+    "HV7": 0.7,
+    "HV8": 0.2,
+    "HV9": 1.0,
+    "HV10": 1.0
+  },
+  "l3_scores": {
+    "SV1": 0.8,
+    "SV2": 0.7,
+    "SV3": 0.8,
+    "SV4": 0.4,
+    "SV5": 0.7,
+    "SV6": 0.7,
+    "SV7": 0.0,
+    "SV8": 0.9,
+    "SV9": 0.2,
+    "SV10": 0.6
+  },
+  "core_values": [
+    "HV9",
+    "HV10",
+    "HV6"
+  ],
+  "evidence": [
+    {
+      "value_id": "HV9",
+      "quote": "Signal’s advanced privacy-preserving technology is always enabled, so you can focus on sharing the moments that matter with the people who matter to you.",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "HV10",
+      "quote": "Signal is a simple, powerful, and secure messenger that uses your phone's data connection (WiFi/3G/4G/5G) to communicate securely.",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "HV6",
+      "quote": "our General Public Licenses are intended to guarantee your freedom to share and change all versions of a program--to make sure it remains free software for all its users.",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "SV8",
+      "quote": "The answer is not more options. [...] The user doesn't know what a key is. [...] If it's \"like PGP,\" it's wrong.",
+      "confidence": 0.9
+    },
+    {
+      "value_id": "HV5",
+      "quote": "For larger changes and feature ideas, we ask that you propose it on the [unofficial Community Forum] for a high-level discussion with the wider community before implementation.",
+      "confidence": 0.85
+    }
+  ],
+  "_cached": true
+}

@@ -1,0 +1,61 @@
+{
+  "repo": "carmen",
+  "model": "deepseek-chat",
+  "l2_scores": {
+    "HV1": 0.8,
+    "HV2": 0.2,
+    "HV3": 0.1,
+    "HV4": 0.3,
+    "HV5": 0.1,
+    "HV6": 0.4,
+    "HV7": 0.6,
+    "HV8": 0.5,
+    "HV9": 0.0,
+    "HV10": 0.0
+  },
+  "l3_scores": {
+    "SV1": 0.3,
+    "SV2": 0.9,
+    "SV3": 0.7,
+    "SV4": 0.6,
+    "SV5": 0.4,
+    "SV6": 0.5,
+    "SV7": 0.0,
+    "SV8": 0.8,
+    "SV9": 0.1,
+    "SV10": 0.7
+  },
+  "core_values": [
+    "SV2",
+    "HV1",
+    "SV8"
+  ],
+  "evidence": [
+    {
+      "value_id": "SV2",
+      "quote": "Complete countries & regions data from the iso-codes Debian package",
+      "confidence": 0.9
+    },
+    {
+      "value_id": "HV1",
+      "quote": "Before submitting a PR that modifies geographical data, please read the Wiki on how to do this properly. This will save everyone a lot of time, and get your PR merged quicker!",
+      "confidence": 0.8
+    },
+    {
+      "value_id": "SV8",
+      "quote": "Carmen is designed to make it easy to access Country and region data. Clean API",
+      "confidence": 0.8
+    },
+    {
+      "value_id": "SV3",
+      "quote": "A repository of geographic regions for Ruby",
+      "confidence": 0.7
+    },
+    {
+      "value_id": "HV7",
+      "quote": "Overriding structural data: You might want to tweak the data that Carmen provides for a variety of reasons",
+      "confidence": 0.7
+    }
+  ],
+  "_cached": true
+}

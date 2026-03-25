@@ -1,0 +1,10 @@
+{
+  "has_value_risk": true,
+  "identified_values": [
+    "HV3",
+    "HV10",
+    "SV5",
+    "SV3",
+    "HV4"
+  ]
+}

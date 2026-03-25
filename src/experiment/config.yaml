@@ -1,0 +1,285 @@
+datasets:
+  code_scenarios:
+    enabled: true
+    path: data/sample_scenarios.json
+    scenario_type: code
+    type: json
+  issue_text_scenarios:
+    enabled: true
+    max_text_length: 8000
+    path: data/values-issues-dataset-master
+    sample_per_project: null
+    scenario_type: text
+    seed: 42
+    type: issues_dataset
+evaluation:
+  confidence_threshold: 0.5
+  metrics:
+  - precision
+  - recall
+  - f1_score
+  - jaccard_index
+  - cohen_kappa
+  - exact_match
+  use_confidence_weighting: true
+iaa_experiment:
+  annotators:
+    human:
+      annotator_id: Human
+      label_source: ground_truth
+    llm_annotators:
+    - gemini-2.5-flash
+    - deepseek-chat
+    - qwen-plus
+    - o4-mini
+    - claude-sonnet-4-5
+    - o3-mini
+    - grok-4
+  llm_outputs_dir: experiment_logs/llm_outputs
+  metrics:
+    dim1:
+    - cohen_kappa
+    - fleiss_kappa
+    - krippendorff_alpha
+    - percent_agreement
+    dim2:
+    - pairwise_jaccard
+    - pairwise_symmetric_f1
+    - per_value_fleiss_kappa
+  output_dir: experiment_results/iaa
+llm_models:
+  claude-sonnet-4-5:
+    api_key_env: ANTHROPIC_API_KEY
+    base_url: https://api.anthropic.com/v1
+    enabled: true
+    max_tokens: 2048
+    model_name: claude-sonnet-4-5
+    provider: anthropic
+    temperature: 0.0
+  deepseek-chat:
+    api_key_env: DEEPSEEK_API_KEY
+    base_url: https://api.deepseek.com
+    enabled: true
+    max_tokens: 2048
+    model_name: deepseek-chat
+    provider: openai
+    temperature: 0.0
+  gemini-2.5-flash:
+    api_key_env: GOOGLE_API_KEY
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    enabled: true
+    max_tokens: 2048
+    model_name: gemini-2.5-flash
+    provider: openai
+    temperature: 0.0
+  gpt-5.2:
+    api_key_env: OPENAI_API_KEY
+    base_url: https://api.openai.com/v1
+    enabled: true
+    max_tokens: 2048
+    model_name: gpt-5.2
+    provider: openai
+    temperature: 1.0
+  grok-4:
+    api_key_env: XAI_API_KEY
+    base_url: https://api.x.ai/v1
+    enabled: true
+    max_tokens: 2048
+    model_name: grok-4
+    provider: openai
+    temperature: 0.0
+  o4-mini:
+    api_key_env: OPENAI_API_KEY
+    base_url: https://api.openai.com/v1
+    enabled: true
+    max_tokens: 2048
+    model_name: o4-mini
+    provider: openai
+    temperature: 1.0
+  qwen-plus:
+    api_key_env: DASHSCOPE_API_KEY
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    enabled: true
+    max_tokens: 2048
+    model_name: qwen-plus
+    provider: openai
+    temperature: 0.0
+output:
+  logs_dir: experiment_logs
+  results_dir: experiment_results
+  save_raw_responses: true
+  table_format: markdown
+  verbose: true
+pipeline_experiment:
+  evidence_agent:
+    search_depth: 3
+    strategies:
+    - hunk_extraction
+    - vector_search
+    - ast_analysis
+    - pattern_matching
+    top_k: 10
+  hypothesis_agent:
+    confidence_threshold: 0.5
+    llm_provider: qwen-plus
+    max_hypotheses: 10
+  output_dir: experiment_results/pipeline
+  repo_data_dir: data/repo_data
+  report_file: pipeline_evaluation_report.md
+  repos:
+  - enabled: true
+    name: focus-android
+    path: data/repo_data/focus-android
+  - enabled: false
+    name: Signal-Android
+    path: data/repo_data/Signal-Android
+  results_file: pipeline_evaluation_results.json
+  sample_extraction:
+    code_extensions:
+    - .java
+    - .kt
+    - .py
+    - .js
+    - .ts
+    - .go
+    - .rs
+    filter_value_related: false
+    max_commits: 100
+    max_hunks_per_commit: 10
+  samples_file: data/commit_samples.json
+profile_experiment:
+  cache_dir: experiment_logs/profile_cache
+  exp1_characterization:
+    representative_model: deepseek-chat
+  exp2_cross_model:
+    models:
+    - deepseek-chat
+    - qwen-plus
+    - o4-mini
+    - claude-sonnet-4-5
+    - gpt-5.2
+    - grok-4
+    - gemini-2.5-flash
+  exp3_downstream:
+    alpha_values:
+    - 0
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1.0
+    - 1.5
+    - 2.0
+    model: qwen-plus
+    target_metric: Value F1
+    threshold: 0.5
+  output_dir: experiment_results/profile
+  repos:
+  - doc_sources:
+    - README.md
+    - CONTRIBUTING.md
+    - .github/
+    - docs/
+    name: Signal-Android
+    path: data/repo_data/Signal-Android
+  - doc_sources:
+    - README.md
+    - CONTRIBUTING.md
+    - .github/
+    - docs/
+    name: focus-android
+    path: data/repo_data/focus-android
+  - doc_sources:
+    - README.md
+    - CONTRIBUTING.md
+    - .github/
+    - docs/
+    name: openclaw
+    path: data/repo_data/openclaw
+  - doc_sources:
+    - README.md
+    - CONTRIBUTING.md
+    - .github/
+    - docs/
+    name: carmen
+    path: data/repo_data/carmen
+prompts:
+  code_value_risk:
+    system_prompt: 'You are an experienced software engineer and project manager
+      specializing in value risk analysis in software systems.
+
+      Your task is to analyze the given code and identify potential value risks.
+
+
+      A value risk refers to a potential issue where a software system may negatively
+      impact important values of users or stakeholders (such as privacy, security,
+      fairness, usability, etc.).
+
+      '
+    user_prompt_template: "## Value Scenario (Code)\n```\n{value_scenario}\n```\n\n\
+      ## Value Model Reference\nThe following are the value types and their definitions\
+      \ that may be involved:\n{value_model}\n\n## Task\nFrom the perspective of a\
+      \ software engineer and project manager, please answer the following two questions:\n\
+      \n(1) Does the above code face value risks? Please answer \"Yes\" or \"No\".\n\
+      \n(2) If there are value risks, which value risks may be involved? Please select\
+      \ the relevant value types from the above value model and explain the reasoning.\n\
+      \n## Output Format\nPlease strictly follow the JSON format below:\n```json\n\
+      {\n  \"has_value_risk\": true/false,\n  \"identified_values\": [\n    {\n  \
+      \    \"value_id\": \"Value ID (e.g., HV1, SV1, etc.)\",\n      \"value_name\"\
+      : \"Value name\",\n      \"confidence\": 0.0-1.0,\n      \"reasoning\": \"Reasoning\
+      \ for identifying this value risk\"\n    }\n  ],\n  \"overall_analysis\": \"\
+      Overall analysis description\"\n}\n```\n"
+  text_value_risk:
+    system_prompt: 'You are an experienced software engineer and project manager
+      specializing in value risk analysis in software systems.
+
+      Your task is to analyze the given GitHub Issue discussion content and identify
+      human value concerns involved.
+
+
+      A value risk refers to a potential issue where a software system may negatively
+      impact important values of users or stakeholders (such as privacy, security,
+      fairness, usability, etc.).
+
+      Issue discussions may contain user dissatisfaction with software behavior, feature
+      requests, bug reports, etc., which may imply concerns about certain values.
+
+      '
+    user_prompt_template: "## Value Scenario (Issue Discussion)\n{value_scenario}\n\
+      \n## Value Model Reference\nThe following are the value types and their definitions\
+      \ that may be involved:\n{value_model}\n\n## Task\nFrom the perspective of a\
+      \ software engineer and project manager, please answer the following two questions:\n\
+      \n(1) Does the above Issue discussion involve value risks? Please answer \"Yes\"\
+      \ or \"No\".\n\n(2) If there are value risks, which value risks may be involved?\
+      \ Please select the relevant value types from the above value model and explain\
+      \ the reasoning.\n\n## Output Format\nPlease strictly follow the JSON format\
+      \ below:\n```json\n{\n  \"has_value_risk\": true/false,\n  \"identified_values\"\
+      : [\n    {\n      \"value_id\": \"Value ID (e.g., HV1, SV1, etc.)\",\n     \
+      \ \"value_name\": \"Value name\",\n      \"confidence\": 0.0-1.0,\n      \"\
+      reasoning\": \"Reasoning for identifying this value risk\"\n    }\n  ],\n  \"\
+      overall_analysis\": \"Overall analysis description\"\n}\n```\n"
+  value_risk_identification:
+    system_prompt: 'You are an experienced software engineer and project manager
+      specializing in value risk analysis in software systems.
+
+      Your task is to analyze the given code or scenario and identify potential value
+      risks.
+
+
+      A value risk refers to a potential issue where a software system may negatively
+      impact important values of users or stakeholders (such as privacy, security,
+      fairness, usability, etc.).
+
+      '
+    user_prompt_template: "## Value Scenario\n{value_scenario}\n\n## Value Model Reference\n\
+      The following are the value types and their definitions that may be involved:\n\
+      {value_model}\n\n## Task\nFrom the perspective of a software engineer and project\
+      \ manager, please answer the following two questions:\n\n(1) Does the above\
+      \ code/scenario face value risks? Please answer \"Yes\" or \"No\".\n\n(2) If\
+      \ there are value risks, which value risks may be involved? Please select the\
+      \ relevant value types from the above value model and explain the reasoning.\n\
+      \n## Output Format\nPlease strictly follow the JSON format below:\n```json\n\
+      {\n  \"has_value_risk\": true/false,\n  \"identified_values\": [\n    {\n  \
+      \    \"value_id\": \"Value ID (e.g., HV1, SV1, etc.)\",\n      \"value_name\"\
+      : \"Value name\",\n      \"confidence\": 0.0-1.0,\n      \"reasoning\": \"Reasoning\
+      \ for identifying this value risk\"\n    }\n  ],\n  \"overall_analysis\": \"\
+      Overall analysis description\"\n}\n```\n"

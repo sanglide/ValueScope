@@ -1,0 +1,1 @@
+"Provides quick, reliable diagnostics for channel health and session status, ensuring graceful degradation when secrets are unavailable. Emphasizes safety through read-only operations and clear warnings."

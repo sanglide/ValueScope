@@ -1,0 +1,35 @@
+{
+  "repo": "Signal-Android",
+  "model": "claude-sonnet-4-5",
+  "l2_scores": {
+    "HV1": 0.0,
+    "HV2": 0.0,
+    "HV3": 0.0,
+    "HV4": 0.0,
+    "HV5": 0.0,
+    "HV6": 0.0,
+    "HV7": 0.0,
+    "HV8": 0.0,
+    "HV9": 0.0,
+    "HV10": 0.0
+  },
+  "l3_scores": {
+    "SV1": 0.0,
+    "SV2": 0.0,
+    "SV3": 0.0,
+    "SV4": 0.0,
+    "SV5": 0.0,
+    "SV6": 0.0,
+    "SV7": 0.0,
+    "SV8": 0.0,
+    "SV9": 0.0,
+    "SV10": 0.0
+  },
+  "core_values": [
+    "HV1",
+    "HV2",
+    "HV3"
+  ],
+  "evidence": [],
+  "raw_response": "I'll analyze the Signal-Android project documentation to identify the human and system values reflected in this secure messaging application.\n\n## Value Profile Analysis: Signal-Android\n\n### Human Values (L2)\n\n**HV1 (Conformity): HIGH**\n- Strong adherence to open source licensing (GNU AGPLv3)\n- Compliance with cryptographic export regulations (ECCN 5D002.C.1)\n- Structured contribution guidelines and code style requirements\n- Formal CLA (Contributor License Agreement) process\n\n**HV2 (Pleasure): MEDIUM**\n- Focus on \"simple, powerful\" user experience\n- Emphasis on \"instantaneous communication\"\n- HD voice/video calls for quality interactions\n- However, ideology explicitly rejects \"power user\" features that might delight advanced users\n\n**HV3 (Dignity): HIGH**\n- Core principle: \"The user doesn't know what a key is\" - respects user intelligence without overwhelming them\n- Avoids exposing users to complex cryptographic terminology\n- Design philosophy protects users from feeling inadequate\n\n**HV4 (Inclusiveness): HIGH**\n- Active translation community and feedback process\n- Multi-platform availability (Android, iOS, Desktop)\n- Support for various Android versions and devices\n- Community forum for diverse user participation\n\n**HV5 (Sense_of_Belonging): MEDIUM**\n- Active community forum for discussions\n- Beta testing program for engaged users\n- Translation contributor community\n- However, focus is primarily on individual secure communication\n\n**HV6 (Freedom): MEDIUM-HIGH**\n- Open source codebase allows user choice and transparency\n- Ideology: \"There are no power users\" suggests limiting certain freedoms\n- Principle: \"The answer is not more options\" - deliberately restricts user configuration choices\n- Free to use without payment requirements\n\n**HV7 (Independence): HIGH**\n- Open source allows self-hosting and modification\n- Uses phone's data connection (not dependent on specific carriers)\n- AGPLv3 license ensures source code availability\n- Can be installed via APK outside Play Store\n\n**HV8 (Wealth): HIGH**\n- Completely free application (\"free and instantaneous\")\n- No subscription or payment model\n- Donation-based funding model (FUNDING.yml)\n- No premium features or paywalls\n\n**HV9 (Privacy): VERY HIGH**\n- Core mission: \"advanced privacy-preserving technology is always enabled\"\n- Fundamental design principle throughout\n- End-to-end encryption by default\n- Minimal data collection philosophy\n\n**HV10 (Security): VERY HIGH**\n- \"Secure messenger\" as primary identity\n- Cryptographic software with proper legal compliance\n- Regular security updates and bug fixes\n- Debug log system for troubleshooting without compromising security\n\n### System Values (L3)\n\n**SV1 (Trust): VERY HIGH**\n- Open source transparency builds trust\n- Established reputation (millions of users)\n- Clear licensing and legal compliance\n- Active community oversight\n\n**SV2 (Correctness): HIGH**\n- Structured bug reporting process\n- Debug log system for issue diagnosis\n- CI/CD pipeline with automated testing (android.yml)\n- QA build process in workflow\n\n**SV3 (Compatibility): HIGH**\n- Support for multiple Android versions\n- Device-specific testing requirements in PR template\n- NDK and CMake version management\n- Multi-device testing expectations\n\n**SV4 (Portability): MEDIUM**\n- Available across platforms (Android, iOS, Desktop)\n- Reproducible builds (Docker configuration)\n- However, platform-specific implementations limit full portability\n\n**SV5 (Reliability): HIGH**\n- Automated CI/CD testing\n- Stale issue management to maintain quality\n- Reproducible build system\n- Regular release cycle with beta testing\n\n**SV6 (Efficiency): MEDIUM-HIGH**\n- Asynchronous design principle: \"It's an asynchronous world\"\n- Avoids blocking operations (ACKs, confirmations)\n- Optimized build process with caching\n- APK diff analysis to monitor size changes\n\n**SV7 (Energy_Preservation): MEDIUM**\n- Uses data connection efficiently\n- Asynchronous design reduces battery drain\n- However, not explicitly prioritized in documentation\n\n**SV8 (Usability): VERY HIGH**\n- Core principle: \"simple, powerful\"\n- \"The answer is not more options\" - prioritizes simplicity\n- Avoids exposing technical complexity\n- Focus on intuitive design over configurability\n\n**SV9 (Accessibility): MEDIUM**\n- Translation support for multiple languages\n- Community-driven accessibility improvements\n- However, no explicit accessibility features mentioned in documentation\n\n**SV10 (Longevity): HIGH**\n- Open source ensures long-term availability\n- Active maintenance and development\n- Reproducible builds for future verification\n- Strong community support and governance\n\n### Key Value Tensions\n\n1. **Freedom vs. Usability**: Signal deliberately limits user options to maintain simplicity, creating tension between HV6 and SV8\n2. **Privacy vs. Debugging**: Debug logs must balance HV9 with SV2 for effective troubleshooting\n3. **Security vs. Efficiency**: Cryptographic operations may impact SV6 but are essential for HV10\n\nThis profile reflects Signal's strong commitment to privacy and security while maintaining usability through deliberate simplification."
+}

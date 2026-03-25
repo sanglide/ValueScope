@@ -1,0 +1,61 @@
+{
+  "repo": "Signal-Android",
+  "model": "qwen-plus",
+  "l2_scores": {
+    "HV1": 0.8,
+    "HV2": 0.3,
+    "HV3": 0.95,
+    "HV4": 0.75,
+    "HV5": 0.65,
+    "HV6": 0.85,
+    "HV7": 0.9,
+    "HV8": 0.2,
+    "HV9": 1.0,
+    "HV10": 1.0
+  },
+  "l3_scores": {
+    "SV1": 0.95,
+    "SV2": 0.9,
+    "SV3": 0.8,
+    "SV4": 0.7,
+    "SV5": 0.9,
+    "SV6": 0.75,
+    "SV7": 0.4,
+    "SV8": 0.85,
+    "SV9": 0.7,
+    "SV10": 0.85
+  },
+  "core_values": [
+    "HV9",
+    "HV10",
+    "HV3"
+  ],
+  "evidence": [
+    {
+      "value_id": "HV9",
+      "quote": "Signal’s advanced privacy-preserving technology is always enabled, so you can focus on sharing the moments that matter with the people who matter to you.",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "HV10",
+      "quote": "Signal is a simple, powerful, and secure messenger that uses your phone's data connection [...] to communicate securely.",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "HV3",
+      "quote": "The user doesn't know what a key is. We need to minimize the points at which a user is exposed to this sort of terminology as extremely as possible.",
+      "confidence": 0.98
+    },
+    {
+      "value_id": "HV7",
+      "quote": "There are no power users. The idea that some users 'understand' concepts better than others has proven to be, for the most part, false. If anything, 'power users' are more dangerous than the rest, and we should avoid exposing dangerous functionality to them.",
+      "confidence": 0.95
+    },
+    {
+      "value_id": "SV1",
+      "quote": "The answer is not more options. If you feel compelled to add a preference that's exposed to the user, it's very possible you've made a wrong turn somewhere.",
+      "confidence": 0.9
+    }
+  ],
+  "_cached": true
+}
