@@ -42,6 +42,7 @@ Please install Git LFS first, then run:
 ```bash
 git lfs install
 git clone <repository-url>
+```
 
 ### Requirements
 
