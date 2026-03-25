@@ -34,6 +34,15 @@ ValueScope/
 
 ## Installation
 
+### Note
+
+This repository uses [Git LFS](https://git-lfs.com) to manage large data files.  
+Please install Git LFS first, then run:
+
+```bash
+git lfs install
+git clone <repository-url>
+
 ### Requirements
 
 - Python >= 3.10, < 3.14
