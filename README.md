@@ -36,7 +36,8 @@ ValueScope/
 
 ### Note
 
-This repository uses [Git LFS](https://git-lfs.com) to manage large data files.  
+This repository uses [Git LFS](https://git-lfs.com) to manage large data files. 
+The data that support the evalution are openly available in 'src/experiment/data.zip'
 Please install Git LFS first, then run:
 
 ```bash
@@ -185,3 +186,11 @@ Experiment configuration is centralized in `src/experiment/config.yaml`:
 - `iaa_experiment`: IAA experiment settings (annotators, metrics, output paths)
 - `pipeline_experiment`: Pipeline evaluation settings (agent configs, repos, sample extraction)
 - `profile_experiment`: Profile experiment settings (sub-experiment configs, repos, cache)
+
+## Motivation Example
+<img width="720" height="784" alt="image" src="https://github.com/user-attachments/assets/d702d52c-7ddb-48e3-b6e0-f966e1b0e9d3" />
+For the motivation example shown in above, a privacy-first application named Signal is presented, where anonymous sending in Signal conceals the sender's identity when enabled. However, when secure fallback fails, the system reverts to unsealed (plain-text) transmission, enhancing usability but exposing metadata that conflicts with Signal’s "privacy first" statement. Next, we will demonstrate how ValueScope discovers and localizes this issue.
+
+As shown in the figure below, the Hypothesis Generator produces two possible hypotheses for the input. The Evidence Location Agent accepts Hypothesis 1, rejects Hypothesis 2, and provides a formalized output.
+<img width="720" height="1009" alt="image" src="https://github.com/user-attachments/assets/9099db3e-f7fc-4840-84db-79c87bf73eca" />
+
