@@ -1,4 +1,4 @@
-# ValueGuard: Profile-Guided Value Risk Identification
+# ValueScope: Profile-Guided Value Risk Identification
 
 This repository contains the implementation and evaluation code for **ValueGuard**, a profile-guided, evidence-verified approach to identifying human-value risks in software engineering artifacts (code changes and issue discussions).
 
