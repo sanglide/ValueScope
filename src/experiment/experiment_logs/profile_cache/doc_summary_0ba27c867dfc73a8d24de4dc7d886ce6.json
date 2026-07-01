@@ -1,1 +1,0 @@
-"Resets local state while preserving the CLI installation. Emphasizes safety through optional backups and dry-run previews. Values user control and non-destructive workflows."

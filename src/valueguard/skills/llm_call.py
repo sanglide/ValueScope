@@ -63,10 +63,11 @@ class LLMCallSkill(BaseSkill):
             provider: LLM provider name. Supported values:
                 - "deepseek" or "deepseek-chat"  -> api.deepseek.com
                 - "qwen" or "qwen-plus"          -> dashscope
-                - "openai", "o4-mini", "gpt-5.2" -> api.openai.com
-                - "anthropic", "claude-sonnet-4-5"-> api.anthropic.com
-                - "gemini-2.5-flash"             -> generativelanguage.googleapis.com
-                - "grok-4"                       -> api.x.ai
+                - "openai"                        -> openai direct
+                - "anthropic"                     -> anthropic direct
+                - "o4-mini", "gpt-5.2",          -> gptsapi.net (OpenAI compat)
+                  "claude-sonnet-4-5", "grok-4",
+                  "gemini-2.5-flash"
             model: Model name override (provider-specific)
             temperature: Sampling temperature (0.0 = deterministic)
             max_tokens: Maximum tokens in response
@@ -78,20 +79,18 @@ class LLMCallSkill(BaseSkill):
         provider = provider or self._default_provider
         start_time = time.time()
 
-        # Determine which API path to use
-        ANTHROPIC_PROVIDERS = {"anthropic", "claude-sonnet-4-5"}
+        # Normalize provider aliases
+        GPTSAPI_PROVIDERS = {
+            "o4-mini",
+            "gpt-5.2",
+            "claude-sonnet-4-5",
+            "grok-4",
+            "gemini-2.5-flash",
+        }
 
         try:
-            if provider in ANTHROPIC_PROVIDERS:
-                response = self._call_anthropic(
-                    user=user,
-                    system=system,
-                    provider=provider,
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-            else:
+            if provider in ("deepseek", "deepseek-chat", "qwen", "qwen-plus", "openai") \
+                    or provider in GPTSAPI_PROVIDERS:
                 response = self._call_openai_compatible(
                     user=user,
                     system=system,
@@ -100,6 +99,16 @@ class LLMCallSkill(BaseSkill):
                     temperature=temperature,
                     max_tokens=max_tokens,
                 )
+            elif provider == "anthropic":
+                response = self._call_anthropic(
+                    user=user,
+                    system=system,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+            else:
+                raise ValueError(f"Unsupported LLM provider: {provider}")
 
             latency_ms = (time.time() - start_time) * 1000
 
@@ -122,13 +131,17 @@ class LLMCallSkill(BaseSkill):
             
             # Enhanced error reporting for common issues
             error_msg = str(e)
-            if "Unexpected role \"system\"" in error_msg and provider in ("claude-sonnet-4-5", "anthropic"):
+            if "Unexpected role \"system\"" in error_msg and provider == "claude-sonnet-4-5":
                 logger.error(
-                    f"Claude API format issue detected!\n"
+                    f"❌ Bedrock Claude API format issue detected!\n"
                     f"   Provider: {provider}\n"
                     f"   Error: {error_msg}\n\n"
-                    f"   Claude does not accept 'system' as a message role in the messages array.\n"
-                    f"   The system prompt should be passed via the 'system' parameter instead."
+                    f"   This is a known limitation when calling Claude via AWS Bedrock.\n"
+                    f"   The gptsapi.net proxy should handle this conversion, but it appears to be passing through the OpenAI message format directly.\n\n"
+                    f"   Workarounds:\n"
+                    f"   1. Contact gptsapi.net support to fix the system message conversion\n"
+                    f"   2. Temporarily remove 'claude-sonnet-4-5' from your --all-models list\n"
+                    f"   3. Use native Anthropic SDK (requires code changes)"
                 )
             
             logger.error(f"LLM call failed (provider={provider}): {e}")
@@ -155,7 +168,7 @@ class LLMCallSkill(BaseSkill):
         temperature: float,
         max_tokens: int,
     ) -> str:
-        """Call OpenAI-compatible API (OpenAI, DeepSeek, Qwen, Gemini, Grok, etc.)."""
+        """Call OpenAI-compatible API (OpenAI, DeepSeek, Qwen, gptsapi.net)."""
         try:
             from openai import OpenAI
         except ImportError:
@@ -170,18 +183,16 @@ class LLMCallSkill(BaseSkill):
             api_key = self._get_api_key("DASHSCOPE_API_KEY")
             base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
             default_model = "qwen-plus"
-        elif provider in ("o4-mini", "gpt-5.2"):
-            api_key = self._get_api_key("OPENAI_API_KEY")
-            base_url = "https://api.openai.com/v1"
+        elif provider in ("o4-mini", "gpt-5.2", "claude-sonnet-4-5", "grok-4", "gemini-2.5-flash"):
+            # All via gptsapi.net OpenAI-compatible proxy
+            api_key = self._get_api_key("GPTSAPI_KEY")
+            base_url = "https://api.gptsapi.net/v1"
+            # provider name IS the model name for gptsapi.net
             default_model = provider
-        elif provider == "gemini-2.5-flash":
-            api_key = self._get_api_key("GOOGLE_API_KEY")
-            base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
-            default_model = "gemini-2.5-flash"
-        elif provider == "grok-4":
-            api_key = self._get_api_key("XAI_API_KEY")
-            base_url = "https://api.x.ai/v1"
-            default_model = "grok-4"
+            
+            # Special handling for claude-sonnet-4-5 via Bedrock
+            # If you encounter "Unexpected role 'system'" error, contact gptsapi.net support
+            # or switch to native Anthropic SDK
         else:  # openai direct
             api_key = self._get_api_key("OPENAI_API_KEY")
             base_url = None
@@ -234,10 +245,9 @@ class LLMCallSkill(BaseSkill):
         self,
         user: str,
         system: str,
-        provider: str = "anthropic",
-        model: Optional[str] = None,
-        temperature: float = 0.0,
-        max_tokens: int = 2048,
+        model: Optional[str],
+        temperature: float,
+        max_tokens: int,
     ) -> str:
         """Call Anthropic Claude API."""
         try:
@@ -247,12 +257,8 @@ class LLMCallSkill(BaseSkill):
 
         api_key = self._get_api_key("ANTHROPIC_API_KEY")
 
-        # Map provider name to model if no explicit model given
-        PROVIDER_MODEL_MAP = {
-            "claude-sonnet-4-5": "claude-sonnet-4-5-20250514",
-        }
-        default_model = PROVIDER_MODEL_MAP.get(provider, "claude-sonnet-4-5-20250514")
-
+        # Get config overrides
+        default_model = "claude-3-5-sonnet-20241022"
         if self.config and "anthropic" in self.config.get("providers", {}):
             provider_config = self.config["providers"]["anthropic"]
             if "api_key_env" in provider_config:

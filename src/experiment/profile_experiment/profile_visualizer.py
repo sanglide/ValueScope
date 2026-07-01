@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Publication-quality visualization module.
-All charts are output following IEEE/ACM paper standards (300 DPI, serif font).
+Publication-quality visualizations.
+All figures are rendered at 300 DPI with serif fonts (IEEE/ACM style).
 """
 
 import numpy as np
@@ -13,11 +13,11 @@ from pathlib import Path
 from typing import Optional
 
 # ---------------------------------------------------------------------------
-# Global Style
+# Global style
 # ---------------------------------------------------------------------------
 
 def setup_style():
-    """Set up publication-quality global style."""
+    """Configure publication-quality global style."""
     plt.rcParams.update({
         "figure.dpi": 300,
         "savefig.dpi": 300,
@@ -37,7 +37,7 @@ def setup_style():
 
 setup_style()
 
-# Color scheme
+# Color palette
 COLORS = [
     "#2196F3",  # blue
     "#F44336",  # red
@@ -51,7 +51,7 @@ COLORS = [
     "#CDDC39",  # lime
 ]
 
-# L2 / L3 short name mapping
+# L2 / L3 short name mappings
 L2_NAMES = {
     "HV1": "Conformity", "HV2": "Pleasure", "HV3": "Dignity",
     "HV4": "Inclusiveness", "HV5": "Belonging", "HV6": "Freedom",
@@ -67,14 +67,20 @@ L3_NAMES = {
 
 
 class ProfileVisualizer:
-    """Publication-quality ValueProfile visualization."""
+    """Publication-quality ValueProfile visualizer."""
 
-    def __init__(self, output_dir: str = "experiment_results/profile"):
+    def __init__(self, output_dir: str = None):
+        from experiment import paths as exp_paths
+        if output_dir is None:
+            output_dir = str(exp_paths.PROFILE_DIR.relative_to(exp_paths.PROJECT_ROOT))
         self.output_dir = Path(output_dir)
+        if not self.output_dir.is_absolute():
+            project_root = Path(__file__).parent.parent.parent.parent
+            self.output_dir = project_root / self.output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
-    # Radar Chart
+    # Radar charts
     # ------------------------------------------------------------------
 
     def plot_radar_chart(
@@ -84,7 +90,7 @@ class ProfileVisualizer:
         title: str = "",
         filename: str = "radar.pdf",
     ) -> str:
-        """Plot a radar chart comparing multiple profiles on L2/L3 dimensions.
+        """绘制雷达图对比多个 Profile 在 L2/L3 维度上的分数。
 
         Args:
             profiles: {label: profile_dict}
@@ -101,7 +107,7 @@ class ProfileVisualizer:
 
         n = len(ids)
         angles = np.linspace(0, 2 * np.pi, n, endpoint=False).tolist()
-        angles += angles[:1]  # Close the polygon
+        angles += angles[:1]  # 闭合
 
         fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(polar=True))
 
@@ -131,7 +137,7 @@ class ProfileVisualizer:
         profiles: dict[str, dict],
         dimension: str = "l2",
     ) -> dict[str, str]:
-        """Plot a separate radar chart for each project, returning {project_name: saved_path}.
+        """为每个项目单独绘制雷达图，返回 {project_name: saved_path}。
 
         Args:
             profiles: {project_name: profile_dict}
@@ -151,7 +157,7 @@ class ProfileVisualizer:
         return paths
 
     # ------------------------------------------------------------------
-    # Heatmap
+    # 热力图
     # ------------------------------------------------------------------
 
     def plot_heatmap(
@@ -164,7 +170,7 @@ class ProfileVisualizer:
         cmap: str = "YlOrRd",
         fmt: str = ".2f",
     ) -> str:
-        """Plot a heatmap with annotated values.
+        """绘制热力图（标注数值）。
 
         Args:
             matrix_data: {"keys": [...], "matrix": [[...]]}
@@ -181,7 +187,7 @@ class ProfileVisualizer:
         ax.set_yticks(range(n))
         ax.set_yticklabels(keys, fontsize=9)
 
-        # Annotate values
+        # 标注数值
         for i in range(n):
             for j in range(n):
                 text_color = "white" if matrix[i, j] > (vmin + vmax) / 2 else "black"
@@ -198,7 +204,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # Box Plot
+    # 箱线图
     # ------------------------------------------------------------------
 
     def plot_box_distribution(
@@ -209,7 +215,7 @@ class ProfileVisualizer:
         xlabel: str = "Value Dimension",
         ylabel: str = "Score",
     ) -> str:
-        """Box plot for each dimension.
+        """每个维度的箱线图。
 
         Args:
             data: {value_id: [score_from_model_1, score_from_model_2, ...]}
@@ -221,7 +227,7 @@ class ProfileVisualizer:
         fig, ax = plt.subplots(figsize=(max(8, len(labels) * 0.6), 5))
         bp = ax.boxplot(values, patch_artist=True, labels=display_names, widths=0.6)
 
-        # Coloring
+        # 着色
         for i, box in enumerate(bp["boxes"]):
             color = COLORS[0] if labels[i].startswith("HV") else COLORS[1]
             box.set_facecolor(color)
@@ -233,7 +239,7 @@ class ProfileVisualizer:
         ax.tick_params(axis="x", rotation=45)
         ax.set_ylim(-0.05, 1.05)
 
-        # Add legend
+        # 添加 legend
         from matplotlib.patches import Patch
         legend_elements = [
             Patch(facecolor=COLORS[0], alpha=0.6, label="L2 Human Values"),
@@ -248,7 +254,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # Grouped Bar Chart
+    # 分组柱状图
     # ------------------------------------------------------------------
 
     def plot_grouped_bar(
@@ -259,7 +265,7 @@ class ProfileVisualizer:
         xlabel: str = "Metric",
         ylabel: str = "Value",
     ) -> str:
-        """Grouped bar chart.
+        """分组柱状图。
 
         Args:
             groups: {group_label: {metric_name: value}}
@@ -278,7 +284,7 @@ class ProfileVisualizer:
             vals = [groups[gl].get(m, 0) for m in metric_names]
             offset = (i - n_groups / 2 + 0.5) * width
             bars = ax.bar(x + offset, vals, width, label=gl, color=COLORS[i % len(COLORS)], alpha=0.85)
-            # Annotate values
+            # 标注数值
             for bar in bars:
                 h = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2, h + 0.01,
@@ -299,7 +305,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # Bar Chart with Error Bars
+    # 带误差棒的柱状图
     # ------------------------------------------------------------------
 
     def plot_stability_errorbar(
@@ -308,7 +314,7 @@ class ProfileVisualizer:
         title: str = "",
         filename: str = "stability_errorbar.pdf",
     ) -> str:
-        """Bar chart with error bars to illustrate stability.
+        """带误差棒的柱状图，展示稳定性。
 
         Args:
             data: {model_key: {value_id: {"mean": ..., "std": ...}}}
@@ -346,7 +352,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # Line Chart — Convergence Trend
+    # 折线图 — 收敛趋势
     # ------------------------------------------------------------------
 
     def plot_convergence_lines(
@@ -357,7 +363,7 @@ class ProfileVisualizer:
         filename: str = "convergence.pdf",
         step_labels: Optional[list[str]] = None,
     ) -> str:
-        """Line chart: Profile score convergence trend over steps.
+        """折线图：Profile 分数随步骤的收敛趋势。
 
         Args:
             data: {model_key: [profile_step0, profile_step1, ...]}
@@ -378,7 +384,7 @@ class ProfileVisualizer:
         if step_labels is None:
             step_labels = [f"Step {i}" for i in steps_x]
 
-        # Select the top-5 dimensions with the largest variation
+        # 选取变化最大的 top-5 维度
         all_ranges = {}
         for vid in ids:
             scores_all = []
@@ -418,7 +424,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # Distance Decay Bar Chart
+    # 距离衰减柱状图
     # ------------------------------------------------------------------
 
     def plot_distance_decay(
@@ -428,7 +434,7 @@ class ProfileVisualizer:
         filename: str = "distance_decay.pdf",
         step_labels: Optional[list[str]] = None,
     ) -> str:
-        """Step-wise distance decay bar chart.
+        """Step-wise distance 衰减柱状图。
 
         Args:
             data: {model_key: [dist_step1_to_2, dist_step2_to_3, ...]}
@@ -463,7 +469,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # Alpha Parameter Curve — Bayesian Calibration Experiment
+    # Alpha 参数曲线 — Bayesian 校验实验
     # ------------------------------------------------------------------
 
     def plot_alpha_curve(
@@ -474,12 +480,12 @@ class ProfileVisualizer:
         filename: str = "exp3_alpha_curve.pdf",
         optimal_alpha: float | None = None,
     ) -> str:
-        """Plot F1 vs. alpha parameter curve, showing the effect of Bayesian calibration strength on detection performance.
+        """绘制 F1 vs alpha 参数曲线，展示贝叶斯校验强度对识别效果的影响。
 
         Args:
             sweep_data: {alpha: {"code": metrics, "text": metrics, "overall": metrics}}
-            metric_key: Name of the metric to plot (e.g., "Value F1", "Risk F1")
-            optimal_alpha: Optimal alpha value, annotated as a vertical dashed line
+            metric_key: 要绘制的指标名称（如 "Value F1", "Risk F1"）
+            optimal_alpha: 最优 alpha 值，标注为竖直虚线
         """
         alphas = sorted(sweep_data.keys())
         splits = ["code", "text", "overall"]
@@ -501,11 +507,11 @@ class ProfileVisualizer:
             ax.plot(alphas, values, marker=style["marker"], color=style["color"],
                     label=style["label"], linewidth=lw, markersize=6)
 
-        # Mark the optimal alpha
+        # 标注最优 alpha
         if optimal_alpha is not None:
             ax.axvline(x=optimal_alpha, color="#888888", linestyle="--",
                        linewidth=1.2, alpha=0.7)
-            # Annotation text
+            # 标注文字
             y_range = ax.get_ylim()
             ax.text(optimal_alpha + 0.03, y_range[0] + (y_range[1] - y_range[0]) * 0.05,
                     f"$\\alpha^*$={optimal_alpha}", fontsize=9, color="#555555")
@@ -523,7 +529,7 @@ class ProfileVisualizer:
         return out_path
 
     # ------------------------------------------------------------------
-    # LaTeX Table
+    # LaTeX 表格
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -533,7 +539,7 @@ class ProfileVisualizer:
         caption: str = "",
         label: str = "",
     ) -> str:
-        """Generate a LaTeX table in booktabs format."""
+        """生成 booktabs 格式 LaTeX 表格。"""
         cols = "l" + "c" * (len(headers) - 1)
         lines = [
             r"\begin{table}[htbp]",

@@ -1,1 +1,0 @@
-"Provides reliable, non-destructive local backups for OpenClaw state and config. Prioritizes data integrity with verification and clear manifest tracking. Ensures safety by preventing overwrites and self-inclusion."

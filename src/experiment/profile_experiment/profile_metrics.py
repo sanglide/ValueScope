@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Profile statistical metrics computation module.
-Provides cross-model consistency, stability, distance, and other metrics.
+Profile 统计指标计算模块。
+提供跨模型一致性、稳定性、距离等指标。
 """
 
 import numpy as np
@@ -9,7 +9,7 @@ from typing import Optional
 
 
 def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
-    """Cosine similarity between two vectors."""
+    """两个向量的余弦相似度。"""
     a, b = np.array(vec_a, dtype=float), np.array(vec_b, dtype=float)
     norm = np.linalg.norm(a) * np.linalg.norm(b)
     if norm == 0:
@@ -20,29 +20,29 @@ def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
 def spearman_rank_correlation(
     scores_a: list[float], scores_b: list[float]
 ) -> tuple[float, float]:
-    """Spearman rank correlation coefficient, returns (rho, p_value)."""
+    """Spearman 秩相关系数，返回 (rho, p_value)。"""
     from scipy.stats import spearmanr
     rho, p = spearmanr(scores_a, scores_b)
     return float(rho), float(p)
 
 
 def kendall_w(score_matrix: np.ndarray) -> float:
-    """Kendall's W coefficient of concordance.
+    """Kendall's W 一致性系数。
 
     Args:
-        score_matrix: shape (M, N), scores from M raters on N items.
+        score_matrix: shape (M, N)，M 个评委对 N 个项目的评分。
     Returns:
-        W value in [0, 1].
+        W 值 [0, 1]。
     """
     m, n = score_matrix.shape
     if m < 2 or n < 2:
         return 0.0
 
-    # Rank transformation (by row)
+    # 秩变换（按行）
     from scipy.stats import rankdata
     ranks = np.array([rankdata(row) for row in score_matrix])
 
-    # Column rank sums
+    # 各列秩和
     rank_sums = ranks.sum(axis=0)
     mean_rank_sum = rank_sums.mean()
     ss = np.sum((rank_sums - mean_rank_sum) ** 2)
@@ -52,7 +52,7 @@ def kendall_w(score_matrix: np.ndarray) -> float:
 
 
 def coefficient_of_variation(values: list[float]) -> float:
-    """Coefficient of variation (CV = std / mean)."""
+    """变异系数 (CV = std / mean)。"""
     arr = np.array(values, dtype=float)
     mean = np.mean(arr)
     if mean == 0:
@@ -61,7 +61,7 @@ def coefficient_of_variation(values: list[float]) -> float:
 
 
 def profile_distance(profile_a: dict, profile_b: dict) -> float:
-    """Euclidean distance between two profiles (based on all 20 dimensions)."""
+    """两个 Profile 之间的欧氏距离（基于全部 20 维分数）。"""
     vec_a = _profile_to_vector(profile_a)
     vec_b = _profile_to_vector(profile_b)
     return float(np.linalg.norm(np.array(vec_a) - np.array(vec_b)))
@@ -71,11 +71,11 @@ def pairwise_agreement_matrix(
     profiles: dict[str, dict],
     metric: str = "spearman",
 ) -> dict:
-    """Compute the pairwise agreement matrix across all model pairs.
+    """计算所有模型对之间的一致性矩阵。
 
     Args:
         profiles: {model_key: profile_dict}
-        metric: "spearman", "cosine", or "distance"
+        metric: "spearman", "cosine", 或 "distance"
     Returns:
         {"keys": [...], "matrix": [[...], ...]}
     """
@@ -108,7 +108,7 @@ def pairwise_agreement_matrix(
 def compute_dimension_stats(
     profiles: list[dict],
 ) -> dict:
-    """Compute per-dimension statistics across multiple profiles.
+    """计算每个维度上跨多个 Profile 的统计量。
 
     Returns:
         {value_id: {"mean": ..., "std": ..., "cv": ..., "min": ..., "max": ...}}
@@ -138,7 +138,7 @@ def compute_dimension_stats(
 
 
 def compute_overall_consistency(profiles: dict[str, dict]) -> dict:
-    """Compute an overall cross-model consistency metrics summary."""
+    """计算跨模型的整体一致性指标汇总。"""
     keys = sorted(profiles.keys())
     if len(keys) < 2:
         return {"kendall_w": 0.0, "avg_spearman": 0.0, "avg_cosine": 0.0}
@@ -168,11 +168,11 @@ def compute_overall_consistency(profiles: dict[str, dict]) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# 辅助
 # ---------------------------------------------------------------------------
 
 def _profile_to_vector(profile: dict) -> list[float]:
-    """Flatten a profile's l2_scores + l3_scores into a 20-dimensional vector."""
+    """将 Profile 的 l2_scores + l3_scores 展平为 20 维向量。"""
     from .profile_generator import L2_IDS, L3_IDS
     l2 = profile.get("l2_scores", {})
     l3 = profile.get("l3_scores", {})

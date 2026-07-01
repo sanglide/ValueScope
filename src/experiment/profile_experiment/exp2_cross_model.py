@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Experiment 2: Cross-Model Consistency
-Verify whether different LLMs generate consistent ValueProfiles for the same project.
+Experiment 2: Cross-Model Consistency.
+Validates whether different LLMs produce consistent ValueProfiles for the same project.
 """
 
 import json
@@ -9,6 +9,7 @@ import logging
 import sys
 from pathlib import Path
 
+# Project paths
 project_root = Path(__file__).parent.parent.parent.parent
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
@@ -21,6 +22,7 @@ from experiment.profile_experiment.profile_metrics import (
     compute_overall_consistency,
 )
 from experiment.profile_experiment.profile_visualizer import ProfileVisualizer
+from experiment import paths as exp_paths
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +32,15 @@ def run_exp2(
     viz: ProfileVisualizer,
     repo_configs: list[dict],
     model_keys: list[str],
-    output_dir: str = "experiment_results/profile",
+    output_dir: str = None,
     force_api: bool = False,
 ) -> dict:
     """Run Experiment 2: Cross-Model Consistency."""
+    if output_dir is None:
+        output_dir = str(exp_paths.PROFILE_DIR.relative_to(exp_paths.PROJECT_ROOT))
     out = Path(output_dir)
+    if not out.is_absolute():
+        out = project_root / out
     out.mkdir(parents=True, exist_ok=True)
     results = {"repos": {}}
 
@@ -43,19 +49,19 @@ def run_exp2(
         path = repo_cfg["path"]
         sources = repo_cfg.get("doc_sources", [])
 
-        logger.info(f"[Exp2] Processing project: {name}")
+        logger.info(f"[Exp2] 处理项目: {name}")
         docs = generator.collect_documents(path, sources)
 
-        # Generate Profile with all models
+        # 用所有模型生成 Profile
         profiles = generator.generate_profiles_multi_model(
             name, docs, model_keys, force_api=force_api
         )
 
-        # Save each Profile
+        # 保存每个 Profile
         for mk, p in profiles.items():
             _save_json(p, out / f"exp2_{name}_{mk}_profile.json")
 
-        # --- Metrics calculation ---
+        # --- 指标计算 ---
         # 1. Pairwise Spearman
         spearman_matrix = pairwise_agreement_matrix(profiles, metric="spearman")
         # 2. Pairwise Cosine
@@ -65,22 +71,22 @@ def run_exp2(
         # 4. Overall consistency
         consistency = compute_overall_consistency(profiles)
 
-        # --- Visualization ---
-        # Heatmap - Spearman
+        # --- 可视化 ---
+        # 热力图 - Spearman
         viz.plot_heatmap(
             spearman_matrix,
             title=f"Pairwise Spearman ρ — {name}",
             filename=f"exp2_{name}_heatmap_spearman.pdf",
             vmin=0.0, vmax=1.0, cmap="YlOrRd",
         )
-        # Heatmap - Cosine
+        # 热力图 - Cosine
         viz.plot_heatmap(
             cosine_matrix,
             title=f"Pairwise Cosine Similarity — {name}",
             filename=f"exp2_{name}_heatmap_cosine.pdf",
             vmin=0.5, vmax=1.0, cmap="YlGn",
         )
-        # Box plot - cross-model score distribution per dimension
+        # 箱线图 - 每个维度跨模型的分数分布
         box_data = {vid: dim_stats[vid]["values"] for vid in ALL_VALUE_IDS}
         viz.plot_box_distribution(
             box_data,
@@ -88,7 +94,7 @@ def run_exp2(
             filename=f"exp2_{name}_boxplot.pdf",
         )
 
-        # --- LaTeX table ---
+        # --- LaTeX 表格 ---
         headers = ["Metric", "Value"]
         std_spearman = consistency.get('std_spearman', 0.0)
         std_cosine = consistency.get('std_cosine', 0.0)
@@ -113,12 +119,12 @@ def run_exp2(
                                 for k, v in dim_stats.items()},
         }
 
-    # Summary report
+    # 汇总报告
     _save_json(results, out / "exp2_results.json")
     md = _generate_exp2_report(results)
     (out / "exp2_report.md").write_text(md, encoding="utf-8")
 
-    logger.info("[Exp2] Experiment completed!")
+    logger.info("[Exp2] 实验完成！")
     return results
 
 
@@ -147,7 +153,7 @@ def _generate_exp2_report(results):
         lines.append(f"- **Num. Model Pairs**: {n_pairs}")
         lines.append("")
 
-        # Dimension statistics - high-variance dimensions
+        # 维度统计 - 高方差维度
         dim_stats = repo_res.get("dimension_stats", {})
         high_cv = [(k, v) for k, v in dim_stats.items() if v.get("cv", 0) > 0.15]
         if high_cv:

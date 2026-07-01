@@ -1,13 +1,13 @@
 """
-IAA (Inter-Annotator Agreement) Data Structure Definitions
-All annotators (LLM + human) are treated as equal peers; no ground truth is assumed.
+IAA (Inter-Annotator Agreement) 数据结构定义
+所有标注者（LLM + 人类）地位平等，无 ground truth
 """
 
 from dataclasses import dataclass, field
 from typing import Optional
 
 
-# All 20 value IDs
+# 全部 20 个价值 ID
 ALL_VALUE_IDS = [f"HV{i}" for i in range(1, 11)] + [f"SV{i}" for i in range(1, 11)]
 
 VALUE_NAMES = {
@@ -23,7 +23,7 @@ VALUE_NAMES = {
 
 @dataclass
 class AnnotatorAnnotation:
-    """A single annotator's annotation for a single sample."""
+    """单个标注者对单个样本的标注"""
     annotator_id: str
     sample_id: str
     has_risk: bool
@@ -33,10 +33,10 @@ class AnnotatorAnnotation:
 
 @dataclass
 class AnnotationMatrix:
-    """Symmetric annotation matrix, the core data container.
+    """对称标注矩阵，核心数据容器
 
-    annotations structure: {sample_id: {annotator_id: AnnotatorAnnotation}}
-    scenario_types structure: {sample_id: "code"/"text"}
+    annotations 结构: {sample_id: {annotator_id: AnnotatorAnnotation}}
+    scenario_types 结构: {sample_id: "code"/"text"}
     """
     sample_ids: list
     annotator_ids: list
@@ -44,7 +44,7 @@ class AnnotationMatrix:
     scenario_types: dict  # {sample_id: "code"/"text"}
 
     def slice_by_scenario(self, scenario_type: str) -> "AnnotationMatrix":
-        """Filter by scenario type and return a new AnnotationMatrix."""
+        """按场景类型过滤，返回新的 AnnotationMatrix"""
         filtered_ids = [
             sid for sid in self.sample_ids
             if self.scenario_types.get(sid) == scenario_type
@@ -69,7 +69,7 @@ class AnnotationMatrix:
     def get_risk_labels_for_pair(
         self, annotator_a: str, annotator_b: str
     ) -> tuple:
-        """Get risk label pairs for two annotators, skipping missing samples.
+        """获取两个标注者的风险标签对，跳过缺失样本
 
         Returns:
             (labels_a: list[bool], labels_b: list[bool])
@@ -89,7 +89,7 @@ class AnnotationMatrix:
     def get_value_sets_for_pair(
         self, annotator_a: str, annotator_b: str
     ) -> tuple:
-        """Get value set pairs for two annotators, skipping missing samples.
+        """获取两个标注者的价值集合对，跳过缺失样本
 
         Returns:
             (sets_a: list[set], sets_b: list[set])
@@ -107,10 +107,10 @@ class AnnotationMatrix:
         return sets_a, sets_b
 
     def build_fleiss_risk_matrix(self) -> list:
-        """Build the risk detection matrix required for Fleiss' Kappa.
+        """构建 Fleiss' Kappa 所需的风险检测矩阵
 
         Returns:
-            N x 2 matrix, each row is [n_no_risk, n_has_risk]
+            N x 2 矩阵，每行 [n_no_risk, n_has_risk]
         """
         matrix = []
         for sid in self.sample_ids:
@@ -130,10 +130,10 @@ class AnnotationMatrix:
         return matrix
 
     def build_per_value_binary_matrix(self, value_id: str) -> list:
-        """Build a binary Fleiss matrix for a specific value_id.
+        """针对某个 value_id 构建二元 Fleiss 矩阵
 
         Returns:
-            N x 2 matrix, each row is [n_not_mentioned, n_mentioned]
+            N x 2 矩阵，每行 [n_not_mentioned, n_mentioned]
         """
         matrix = []
         for sid in self.sample_ids:
@@ -153,10 +153,10 @@ class AnnotationMatrix:
         return matrix
 
     def build_krippendorff_risk_data(self) -> list:
-        """Build the reliability data matrix required for Krippendorff's Alpha.
+        """构建 Krippendorff's Alpha 所需的可靠性数据矩阵
 
         Returns:
-            M x N matrix (M = annotators, N = samples), elements are 0/1/None (missing)
+            M x N 矩阵 (M=标注者, N=样本), 元素为 0/1/None(缺失)
         """
         data = []
         for aid in self.annotator_ids:
@@ -174,16 +174,16 @@ class AnnotationMatrix:
 
 @dataclass
 class PairwiseAgreementResult:
-    """Pairwise annotator agreement result (Dimension 1 + Dimension 2)."""
+    """成对标注者的一致性结果（维度1 + 维度2）"""
     annotator_a: str
     annotator_b: str
-    # Dimension 1: Risk Detection
+    # 维度1: 风险检测
     dim1_cohen_kappa: float = 0.0
     dim1_pabak: float = 0.0
     dim1_gwet_ac1: float = 0.0
     dim1_percent_agreement: float = 0.0
     dim1_n_samples: int = 0
-    # Dimension 2: Value ID Identification
+    # 维度2: 价值ID识别
     dim2_jaccard: float = 0.0
     dim2_symmetric_f1: float = 0.0
     dim2_n_samples: int = 0
@@ -191,26 +191,26 @@ class PairwiseAgreementResult:
 
 @dataclass
 class MultiAnnotatorAgreementResult:
-    """Overall multi-annotator agreement result."""
-    # Dimension 1
+    """全体标注者的一致性结果"""
+    # 维度1
     dim1_fleiss_kappa: float = 0.0
     dim1_krippendorff_alpha: float = 0.0
     dim1_avg_pairwise_kappa: float = 0.0
     dim1_avg_pairwise_pabak: float = 0.0
     dim1_avg_pairwise_ac1: float = 0.0
-    # Dimension 2
+    # 维度2
     dim2_avg_pairwise_jaccard: float = 0.0
     dim2_avg_pairwise_f1: float = 0.0
     dim2_per_value_fleiss_kappa: dict = field(default_factory=dict)
     dim2_macro_avg_value_kappa: float = 0.0
-    # Statistics
+    # 统计
     n_annotators: int = 0
     n_samples: int = 0
 
 
 @dataclass
 class IAAExperimentResults:
-    """Final experiment results organized by scenario."""
+    """按场景组织的最终实验结果"""
     pairwise: dict = field(default_factory=dict)  # {"A_vs_B": PairwiseAgreementResult}
     multi_annotator: Optional[MultiAnnotatorAgreementResult] = None
     scenario_type: str = ""

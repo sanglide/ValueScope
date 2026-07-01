@@ -1,1 +1,0 @@
-"Ensures safe string removal by marking them for phased deletion across release cycles. Prioritizes stability by preventing crashes in Beta and Release versions. Emphasizes careful, automated future cleanup."

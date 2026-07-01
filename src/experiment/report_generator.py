@@ -1,6 +1,6 @@
 """
-Report Generation Module
-Generate tables for experiment results (supports Markdown, LaTeX, CSV formats)
+Report generation module.
+Produces tables in Markdown, LaTeX, and CSV formats.
 """
 
 import csv
@@ -11,14 +11,16 @@ from typing import Optional, List, Tuple, Dict
 
 try:
     from .evaluator import EvaluationMetrics
+    from . import paths as exp_paths
 except ImportError:
     from evaluator import EvaluationMetrics
+    import paths as exp_paths
 
 
 class ReportGenerator:
-    """Report Generator"""
+    """Generic report generator."""
     
-    # Default table column configuration
+    # Default table columns
     DEFAULT_COLUMNS = [
         ("model_name", "Model"),
         ("risk_precision", "Risk P"),
@@ -35,9 +37,15 @@ class ReportGenerator:
         ("cohen_kappa", "Kappa"),
     ]
     
-    def __init__(self, output_dir: str = "experiment_results"):
+    def __init__(self, output_dir: str = None):
+        if output_dir is None:
+            output_dir = str(exp_paths.RESULTS_DIR.relative_to(exp_paths.PROJECT_ROOT))
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # Resolve relative paths against the project root when used as a default
+        if not self.output_dir.is_absolute():
+            project_root = Path(__file__).parent.parent.parent
+            self.output_dir = project_root / self.output_dir
     
     def generate_markdown_table(
         self,
@@ -45,18 +53,18 @@ class ReportGenerator:
         columns: Optional[list[tuple[str, str]]] = None,
         title: str = "Experiment Results"
     ) -> str:
-        """Generate a Markdown format table"""
+        """Generate a Markdown table."""
         columns = columns or self.DEFAULT_COLUMNS
         
         lines = [f"## {title}\n"]
         
-        # Header
+        # 表头
         header = "| " + " | ".join([col[1] for col in columns]) + " |"
         separator = "|" + "|".join(["---" for _ in columns]) + "|"
         lines.append(header)
         lines.append(separator)
         
-        # Data rows
+        # 数据行
         for metrics in metrics_list:
             metrics_dict = metrics.to_dict()
             row_values = []
@@ -77,7 +85,7 @@ class ReportGenerator:
         caption: str = "Evaluation Results",
         label: str = "tab:results"
     ) -> str:
-        """Generate a LaTeX format table"""
+        """生成LaTeX格式的表格"""
         columns = columns or self.DEFAULT_COLUMNS
         
         lines = [
@@ -89,12 +97,12 @@ class ReportGenerator:
             "\\toprule"
         ]
         
-        # Header
+        # 表头
         header = " & ".join([col[1] for col in columns]) + " \\\\"
         lines.append(header)
         lines.append("\\midrule")
         
-        # Data rows
+        # 数据行
         for metrics in metrics_list:
             metrics_dict = metrics.to_dict()
             row_values = []
@@ -119,14 +127,14 @@ class ReportGenerator:
         metrics_list: list[EvaluationMetrics],
         columns: Optional[list[tuple[str, str]]] = None
     ) -> str:
-        """Generate a CSV format table"""
+        """生成CSV格式的表格"""
         columns = columns or self.DEFAULT_COLUMNS
         
         lines = []
-        # Header
+        # 表头
         lines.append(",".join([col[1] for col in columns]))
         
-        # Data rows
+        # 数据行
         for metrics in metrics_list:
             metrics_dict = metrics.to_dict()
             row_values = []
@@ -146,7 +154,7 @@ class ReportGenerator:
         experiment_name: str = "experiment",
         formats: list[str] = None
     ) -> dict[str, str]:
-        """Save results to files in multiple formats"""
+        """保存结果到多种格式的文件"""
         formats = formats or ["markdown", "latex", "csv"]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         saved_files = {}
@@ -169,7 +177,7 @@ class ReportGenerator:
             csv_file.write_text(csv_content, encoding='utf-8')
             saved_files["csv"] = str(csv_file)
         
-        # Save complete JSON results
+        # 保存完整的JSON结果
         json_data = {
             "experiment_name": experiment_name,
             "timestamp": timestamp,
@@ -182,12 +190,12 @@ class ReportGenerator:
         return saved_files
     
     def print_summary(self, metrics_list: list[EvaluationMetrics]) -> None:
-        """Print result summary to console"""
+        """打印结果摘要到控制台"""
         print("\n" + "=" * 80)
         print("EXPERIMENT RESULTS SUMMARY")
         print("=" * 80)
         
-        # Print in concise format
+        # 使用简洁的格式打印
         header = f"{'Model':<25} {'Risk F1':>10} {'Value F1':>10} {'Jaccard':>10} {'Kappa':>10}"
         print(header)
         print("-" * 80)
@@ -200,7 +208,7 @@ class ReportGenerator:
 
 
 class DetailedReportGenerator(ReportGenerator):
-    """Detailed report generator with additional analysis information"""
+    """详细报告生成器，包含更多分析信息"""
     
     def generate_detailed_markdown(
         self,
@@ -208,11 +216,11 @@ class DetailedReportGenerator(ReportGenerator):
         raw_predictions: Optional[dict] = None,
         experiment_config: Optional[dict] = None
     ) -> str:
-        """Generate a detailed Markdown report"""
+        """生成详细的Markdown报告"""
         lines = ["# Value Risk Identification Experiment Report\n"]
         lines.append(f"**Generated at:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         
-        # Experiment configuration
+        # 实验配置
         if experiment_config:
             lines.append("## Experiment Configuration\n")
             lines.append("```yaml")
@@ -220,12 +228,12 @@ class DetailedReportGenerator(ReportGenerator):
                 lines.append(f"{key}: {value}")
             lines.append("```\n")
         
-        # Main results table
+        # 主结果表格
         lines.append("## Main Results\n")
         lines.append(self.generate_markdown_table(metrics_list))
         lines.append("\n")
         
-        # Risk detection results table
+        # 风险检测结果表格
         lines.append("## Risk Detection Results\n")
         risk_columns = [
             ("model_name", "Model"),
@@ -237,7 +245,7 @@ class DetailedReportGenerator(ReportGenerator):
         lines.append(self.generate_markdown_table(metrics_list, columns=risk_columns, title=""))
         lines.append("\n")
         
-        # Value identification results table
+        # 价值识别结果表格
         lines.append("## Value Identification Results\n")
         value_columns = [
             ("model_name", "Model"),
@@ -250,7 +258,7 @@ class DetailedReportGenerator(ReportGenerator):
         lines.append(self.generate_markdown_table(metrics_list, columns=value_columns, title=""))
         lines.append("\n")
         
-        # Statistics
+        # 统计信息
         lines.append("## Statistics\n")
         for metrics in metrics_list:
             lines.append(f"- **{metrics.model_name}**: {metrics.valid_predictions}/{metrics.total_samples} valid predictions")

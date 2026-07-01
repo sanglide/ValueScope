@@ -2,24 +2,19 @@
 """
 Experiment 3: Profile as Bayesian Hypothesis Calibrator
 
-Validates the weighting effect of ValueProfile as a posterior calibrator
-on hypothesis confidence. Profile does not participate in hypothesis
-generation directly; instead, it applies Bayesian weighting to
-confidence scores after LLM output, thereby avoiding narrowing the
-hypothesis space while improving identification accuracy.
+验证 ValueProfile 作为后验校验器对假说置信度的加权效果。
+Profile 不直接参与假说生成，而是在 LLM 输出后对置信度进行贝叶斯加权，
+从而避免缩窄假说范围，同时提升识别精度。
 
-Core formula:
+核心公式:
     mu   = mean(all 20 profile scores)
     ratio[v] = profile_score[v] / mu
     weighted_conf[v] = raw_conf[v] * ratio[v]^alpha
 
-alpha = 0 is equivalent to no calibration (pure baseline); alpha > 0
-amplifies dimensions with higher Profile scores.
-For projects without a Profile, a uniform prior (0.5) is used, where
-ratio = 1, so any alpha has no effect.
+alpha = 0 等价于无校验（纯基线），alpha > 0 时高 Profile 分值维度被放大。
+对于没有 Profile 的项目使用均匀先验 (0.5)，此时 ratio ≡ 1，任何 alpha 下均无效果。
 
-Reuses the full dataset from the IAA experiment (68 code + 1097 issue text)
-and its cached LLM outputs.
+复用 IAA 实验的完整数据集（68 code + 1097 issue text）及其 LLM 缓存输出。
 """
 
 import json
@@ -28,12 +23,14 @@ import sys
 from pathlib import Path
 from statistics import mean as _mean
 
+# Project paths
 project_root = Path(__file__).parent.parent.parent.parent
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from experiment.profile_experiment.profile_visualizer import ProfileVisualizer
+from experiment import paths as exp_paths
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +46,7 @@ ALL_VALUE_IDS = [f"HV{i}" for i in range(1, 11)] + [f"SV{i}" for i in range(1, 1
 # ---------------------------------------------------------------------------
 
 def _build_uniform_profile() -> dict:
-    """Return a uniform prior Profile (all dimensions = 0.5)."""
+    """Return a uniform prior profile (all dimensions = 0.5)."""
     return {
         "l2_scores": {f"HV{i}": 0.5 for i in range(1, 11)},
         "l3_scores": {f"SV{i}": 0.5 for i in range(1, 11)},
@@ -57,7 +54,7 @@ def _build_uniform_profile() -> dict:
 
 
 def _resolve_sample_profile(sample: dict, profiles: dict) -> dict:
-    """Match a sample's repo to the corresponding Profile; fall back to uniform prior on mismatch."""
+    """Match a sample to its repo profile; fall back to uniform prior."""
     repo = sample.get("repo", "").lower().replace("-", "").replace("_", "")
     for pname, pdata in profiles.items():
         if pname.lower().replace("-", "").replace("_", "") in repo or \
@@ -67,10 +64,10 @@ def _resolve_sample_profile(sample: dict, profiles: dict) -> dict:
 
 
 def _compute_profile_ratios(profile: dict) -> dict[str, float]:
-    """Convert Profile's 20-dimension scores to normalized ratios: ratio[v] = score[v] / mu.
+    """Normalize 20-dimensional profile scores: ratio[v] = score[v] / mu.
 
-    For a uniform prior (all 0.5), mu=0.5, so all ratios=1.0 (no effect).
-    For the degenerate case of mu=0, all ratios=1.0 (degrades to no weighting).
+    For a uniform prior (all 0.5), mu=0.5 and all ratios=1.0 (no effect).
+    For degenerate mu=0, all ratios=1.0 (no weighting).
     """
     all_scores = []
     l2 = profile.get("l2_scores", {})
@@ -93,7 +90,7 @@ def _compute_profile_ratios(profile: dict) -> dict[str, float]:
 
 
 # ---------------------------------------------------------------------------
-# Bayesian weighting
+# 贝叶斯加权
 # ---------------------------------------------------------------------------
 
 def _apply_bayesian_weighting(
@@ -102,10 +99,10 @@ def _apply_bayesian_weighting(
     alpha: float,
     threshold: float = 0.5,
 ) -> dict:
-    """Apply Bayesian posterior weighting to LLM raw prediction confidences.
+    """对 LLM 原始预测置信度进行贝叶斯后验加权。
 
     weighted_conf[v] = raw_conf[v] * ratio[v]^alpha
-    Only dimensions predicted by the LLM (raw_conf > 0) have a chance to survive.
+    仅已被 LLM 预测的维度 (raw_conf > 0) 有机会存活。
 
     Returns:
         {"has_value_risk": bool, "identified_values": list[str]}
@@ -127,11 +124,11 @@ def _apply_bayesian_weighting(
 
 
 # ---------------------------------------------------------------------------
-# Metrics computation (consistent with original version)
+# 指标计算（与原版一致）
 # ---------------------------------------------------------------------------
 
 def _compute_metrics(predictions: list[dict], ground_truths: list[dict]) -> dict:
-    """Compute Risk Detection and Value Identification metrics."""
+    """计算 Risk Detection 和 Value Identification 指标。"""
     tp = fp = fn = tn = 0
     val_tp = val_fp = val_fn = 0
     jaccard_sum = 0.0
@@ -182,7 +179,7 @@ def _compute_metrics(predictions: list[dict], ground_truths: list[dict]) -> dict
 
 
 # ---------------------------------------------------------------------------
-# IAA cache loading
+# IAA 缓存加载
 # ---------------------------------------------------------------------------
 
 def _load_iaa_baseline(
@@ -190,7 +187,7 @@ def _load_iaa_baseline(
     model_key: str,
     sample_ids: list[str],
 ) -> list[dict]:
-    """Load baseline predictions (including predicted_confidences) from IAA experiment cache.
+    """从 IAA 实验缓存加载基线预测（包含 predicted_confidences）。
 
     Returns:
         [{
@@ -217,23 +214,23 @@ def _load_iaa_baseline(
                 continue
             except Exception:
                 pass
-        # Cache does not exist or parsing failed
+        # 缓存不存在或解析失败
         results.append({
             "has_value_risk": False,
             "identified_values": [],
             "predicted_confidences": {},
         })
 
-    logger.info(f"[Exp3] Loaded {loaded}/{len(sample_ids)} baseline entries from IAA cache (with confidences)")
+    logger.info(f"[Exp3] 从 IAA 缓存加载 {loaded}/{len(sample_ids)} 条 baseline（含 confidences）")
     return results
 
 
 # ---------------------------------------------------------------------------
-# Dataset loading (reuses IAA experiment loading logic)
+# 数据集加载（复用 IAA 实验的加载逻辑）
 # ---------------------------------------------------------------------------
 
 def _load_iaa_datasets(config: dict) -> list[dict]:
-    """Load all datasets used in the IAA experiment, returning a unified sample list.
+    """加载 IAA 实验使用的全部数据集，返回统一格式的样本列表。
 
     Returns:
         [{"sample_id", "scenario_content", "scenario_type", "has_value_risk",
@@ -281,12 +278,12 @@ def _load_iaa_datasets(config: dict) -> list[dict]:
                     "repo": s.metadata.get("project_name", "unknown"),
                 })
 
-    logger.info(f"[Exp3] Loaded IAA datasets: {len(samples)} samples")
+    logger.info(f"[Exp3] 加载 IAA 数据集: {len(samples)} 个样本")
     return samples
 
 
 # ---------------------------------------------------------------------------
-# Alpha parameter sweep
+# Alpha 参数扫描
 # ---------------------------------------------------------------------------
 
 def _sweep_alpha(
@@ -296,12 +293,12 @@ def _sweep_alpha(
     alpha_values: list[float],
     threshold: float = 0.5,
 ) -> dict[float, dict[str, dict]]:
-    """Perform Bayesian weighting for each alpha value, computing metrics grouped by scenario type.
+    """对每个 alpha 值执行贝叶斯加权，按场景类型分组计算指标。
 
     Returns:
         {alpha: {"code": metrics, "text": metrics, "overall": metrics}}
     """
-    # Pre-compute ground truth and profile ratios for each sample
+    # 预计算每个样本的 ground truth 和 profile ratios
     ground_truths = []
     sample_ratios = []
     for sample in samples:
@@ -314,14 +311,14 @@ def _sweep_alpha(
 
     results = {}
     for alpha in alpha_values:
-        # Apply Bayesian weighting to all samples
+        # 对所有样本做贝叶斯加权
         predictions = []
         for i, (baseline, ratios) in enumerate(zip(baselines, sample_ratios)):
             raw_conf = baseline.get("predicted_confidences", {})
             pred = _apply_bayesian_weighting(raw_conf, ratios, alpha, threshold)
             predictions.append(pred)
 
-        # Compute metrics grouped by scenario type
+        # 按场景类型分组计算
         alpha_metrics = {}
         for label, target_type in [("code", "code"), ("text", "text"), ("overall", None)]:
             if target_type:
@@ -346,7 +343,7 @@ def _find_optimal_alpha(
     sweep_results: dict[float, dict[str, dict]],
     target_metric: str = "Value F1",
 ) -> float:
-    """Find the alpha with the highest target_metric on overall from sweep results."""
+    """从 sweep 结果中找出 overall 上 target_metric 最大的 alpha。"""
     best_alpha = 0.0
     best_score = -1.0
     for alpha, splits in sweep_results.items():
@@ -358,7 +355,7 @@ def _find_optimal_alpha(
 
 
 # ---------------------------------------------------------------------------
-# Main experiment entry point
+# Main entry
 # ---------------------------------------------------------------------------
 
 def run_exp3(
@@ -367,45 +364,48 @@ def run_exp3(
     config: dict,
     model_key: str = "qwen-plus",
     iaa_cache_dir: str = "",
-    output_dir: str = "experiment_results/profile",
+    output_dir: str = None,
 ) -> dict:
     """Run Experiment 3: Profile as Bayesian Hypothesis Calibrator.
 
-    A pure computation experiment requiring no LLM API calls. Loads LLM-predicted
-    confidences from the IAA cache, applies Bayesian weighting using Profile as
-    a prior, and sweeps over multiple alpha values.
+    Pure computation, no LLM calls. Loads LLM-predicted confidences from the IAA cache,
+    uses profiles as Bayesian priors, and sweeps multiple alpha values.
 
     Args:
         viz: Visualizer
         profiles: {repo_name: profile_dict} from Exp1
-        config: Full experiment config (used to load datasets identical to IAA)
-        model_key: LLM used (must match the model used in the IAA experiment)
+        config: Full experiment config (for loading the same datasets as IAA)
+        model_key: LLM used (must match the model cached by IAA)
         iaa_cache_dir: IAA experiment LLM output cache directory
         output_dir: Output directory
     """
+    if output_dir is None:
+        output_dir = str(exp_paths.PROFILE_DIR.relative_to(exp_paths.PROJECT_ROOT))
     out = Path(output_dir)
+    if not out.is_absolute():
+        out = project_root / out
     out.mkdir(parents=True, exist_ok=True)
 
-    # Read alpha sweep parameters from config
+    # 从配置读取 alpha sweep 参数
     exp3_cfg = config.get("profile_experiment", {}).get("exp3_downstream", {})
     alpha_values = exp3_cfg.get("alpha_values", [0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0])
     threshold = exp3_cfg.get("threshold", 0.5)
     target_metric = exp3_cfg.get("target_metric", "Value F1")
 
-    # 1. Load datasets identical to the IAA experiment
+    # 1. 加载与 IAA 实验相同的数据集
     samples = _load_iaa_datasets(config)
     if not samples:
-        raise RuntimeError("Failed to load IAA datasets")
+        raise RuntimeError("无法加载 IAA 数据集")
 
     sample_ids = [s["sample_id"] for s in samples]
     code_count = sum(1 for s in samples if s["scenario_type"] == "code")
     text_count = sum(1 for s in samples if s["scenario_type"] == "text")
-    logger.info(f"[Exp3] Dataset: {code_count} code + {text_count} text = {len(samples)} total")
+    logger.info(f"[Exp3] 数据集: {code_count} code + {text_count} text = {len(samples)} total")
 
-    # 2. Load IAA cache (with predicted_confidences)
+    # 2. 加载 IAA 缓存（含 predicted_confidences）
     baselines = _load_iaa_baseline(iaa_cache_dir, model_key, sample_ids)
 
-    # 3. Collect Profile matching statistics
+    # 3. 统计 Profile 匹配情况
     profile_match_stats = {"project_profile": 0, "uniform_prior": 0}
     for s in samples:
         p = _resolve_sample_profile(s, profiles)
@@ -413,17 +413,17 @@ def run_exp3(
             profile_match_stats["project_profile"] += 1
         else:
             profile_match_stats["uniform_prior"] += 1
-    logger.info(f"[Exp3] Profile matching: {profile_match_stats}")
+    logger.info(f"[Exp3] Profile 匹配: {profile_match_stats}")
 
-    # 4. Alpha parameter sweep
-    logger.info(f"[Exp3] Starting alpha sweep: {alpha_values}")
+    # 4. Alpha 参数扫描
+    logger.info(f"[Exp3] 开始 alpha sweep: {alpha_values}")
     sweep_results = _sweep_alpha(samples, baselines, profiles, alpha_values, threshold)
 
-    # 5. Find optimal alpha
+    # 5. 找到最优 alpha
     optimal_alpha = _find_optimal_alpha(sweep_results, target_metric)
-    logger.info(f"[Exp3] Optimal alpha = {optimal_alpha} (by {target_metric})")
+    logger.info(f"[Exp3] 最优 alpha = {optimal_alpha} (by {target_metric})")
 
-    # 6. Visualization — F1 vs alpha curve
+    # 6. 可视化 — F1 vs alpha 曲线
     viz.plot_alpha_curve(
         sweep_results,
         metric_key=target_metric,
@@ -432,7 +432,7 @@ def run_exp3(
         optimal_alpha=optimal_alpha,
     )
 
-    # Additionally plot Risk F1 curve
+    # 额外画 Risk F1 曲线
     viz.plot_alpha_curve(
         sweep_results,
         metric_key="Risk F1",
@@ -441,7 +441,7 @@ def run_exp3(
         optimal_alpha=optimal_alpha,
     )
 
-    # 7. Build comparison results (alpha=0 vs optimal alpha)
+    # 7. 构建对比结果 (alpha=0 vs optimal alpha)
     baseline_metrics = sweep_results.get(0, sweep_results.get(0.0, {}))
     optimal_metrics = sweep_results.get(optimal_alpha, {})
 
@@ -463,7 +463,7 @@ def run_exp3(
             "delta": delta,
         }
 
-    # 8. LaTeX table
+    # 8. LaTeX 表格
     headers = ["Scenario", "N", "Metric", f"$\\alpha$=0", f"$\\alpha$={optimal_alpha}", "$\\Delta$"]
     rows = []
     for label in ["code", "text", "overall"]:
@@ -486,7 +486,7 @@ def run_exp3(
         if label != "overall":
             rows.append(["\\midrule"] + [""] * 5)
 
-    # Filter empty rows
+    # 过滤空行
     rows = [r for r in rows if any(cell.strip() for cell in r if cell)]
     latex = viz.generate_latex_table(
         headers, rows,
@@ -495,7 +495,7 @@ def run_exp3(
     )
     viz.save_latex_table(latex, "exp3_bayesian_table.tex")
 
-    # 9. Grouped bar chart — baseline vs optimal for overall only
+    # 9. 分组柱状图 — 仅 overall 的 baseline vs optimal
     overall_base = comparison.get("overall", {}).get("baseline", {})
     overall_opt = comparison.get("overall", {}).get("optimal", {})
     if overall_base and overall_opt:
@@ -509,7 +509,7 @@ def run_exp3(
             xlabel="Metric", ylabel="Score",
         )
 
-    # 10. Save results
+    # 10. 保存结果
     results = {
         "model": model_key,
         "total_samples": len(samples),
@@ -529,12 +529,12 @@ def run_exp3(
     md = _generate_exp3_report(results)
     (out / "exp3_report.md").write_text(md, encoding="utf-8")
 
-    logger.info("[Exp3] Experiment completed!")
+    logger.info("[Exp3] 实验完成！")
     return results
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# 辅助
 # ---------------------------------------------------------------------------
 
 def _save_json(data, path):

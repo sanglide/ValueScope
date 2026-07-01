@@ -27,6 +27,10 @@ from typing import Optional
 
 import yaml
 
+# Load environment variables from .env
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
 try:
     from .data_loader import (
         ScenarioDataLoader,
@@ -47,6 +51,7 @@ try:
     from . import iaa_metrics
     from .iaa_report_generator import IAAReportGenerator
     from .llm_client import LLMClientFactory, BaseLLMClient
+    from . import paths as exp_paths
 except ImportError:
     from data_loader import (
         ScenarioDataLoader,
@@ -67,6 +72,7 @@ except ImportError:
     import iaa_metrics
     from iaa_report_generator import IAAReportGenerator
     from llm_client import LLMClientFactory, BaseLLMClient
+    import paths as exp_paths
 
 
 class IAAExperiment:
@@ -106,7 +112,11 @@ class IAAExperiment:
         self.llm_clients: dict[str, BaseLLMClient] = {}
 
         # Logging
-        log_dir = Path(__file__).parent / self.config.get("output", {}).get("logs_dir", "experiment_logs")
+        project_root = Path(__file__).parent.parent.parent
+        log_dir = project_root / self.config.get("output", {}).get(
+            "logs_dir",
+            str(exp_paths.LOGS_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+        )
         log_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_file = log_dir / f"iaa_experiment_{timestamp}.log"
@@ -126,8 +136,9 @@ class IAAExperiment:
 
         # LLM output cache directory
         iaa_config = self.config.get("iaa_experiment", {})
-        self.llm_outputs_dir = Path(__file__).parent / iaa_config.get(
-            "llm_outputs_dir", "experiment_logs/llm_outputs"
+        self.llm_outputs_dir = project_root / iaa_config.get(
+            "llm_outputs_dir",
+            str(exp_paths.LLM_OUTPUTS_DIR.relative_to(exp_paths.PROJECT_ROOT)),
         )
         self.llm_outputs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -220,6 +231,12 @@ class IAAExperiment:
             if ds_type == "json":
                 loader = ScenarioDataLoader()
                 loader.load_from_json(str(ds_path))
+                samples = loader.get_samples()
+                for s in samples:
+                    s.metadata["scenario_type"] = scenario_type
+            elif ds_type == "json_dir":
+                loader = ScenarioDataLoader()
+                loader.load_from_directory(str(ds_path))
                 samples = loader.get_samples()
                 for s in samples:
                     s.metadata["scenario_type"] = scenario_type
@@ -740,8 +757,11 @@ class IAAExperiment:
 
         # Export CSV
         iaa_config = self.config.get("iaa_experiment", {})
-        output_dir = iaa_config.get("output_dir", "experiment_results/iaa")
-        csv_path = Path(__file__).parent / output_dir / "annotations_comparison.csv"
+        output_dir = project_root / iaa_config.get(
+            "output_dir",
+            str(exp_paths.IAA_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+        )
+        csv_path = output_dir / "annotations_comparison.csv"
         self.export_annotations_csv(raw, str(csv_path))
 
         matrix = self.build_annotation_matrix(raw)
@@ -845,9 +865,12 @@ def main():
 
     # Generate reports
     iaa_config = experiment.config.get("iaa_experiment", {})
-    output_dir = args.output_dir or iaa_config.get("output_dir", "experiment_results/iaa")
-    output_dir = str(Path(__file__).parent / output_dir)
-    reporter = IAAReportGenerator(output_dir=output_dir)
+    output_dir = args.output_dir or iaa_config.get(
+        "output_dir",
+        str(exp_paths.IAA_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+    )
+    output_dir = Path(output_dir)
+    reporter = IAAReportGenerator(output_dir=str(output_dir))
     saved = reporter.save_all(results)
     print(f"\nReports saved to: {output_dir}")
     for name, path in saved.items():

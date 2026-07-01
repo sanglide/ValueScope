@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """
-Value Profile Evaluation — Master Control Script
-Run 3 evaluation experiments and generate a comprehensive report.
+Value Profile Evaluation orchestrator.
+
+Runs three evaluation experiments and produces a combined report.
 
 Experiments:
-  1. Profile Characterization (Case Study)
+  1. Profile Characterization (case study)
   2. Cross-Model Consistency
-  3. Downstream Impact / Ablation (Ablation Study, reusing IAA dataset)
+  3. Downstream Impact / Ablation (reuses the IAA dataset)
 
 Usage:
     python -m experiment.profile_experiment.run_all --experiments all
@@ -21,7 +22,7 @@ import sys
 import time
 from pathlib import Path
 
-# Add project path
+# Project paths
 project_root = Path(__file__).parent.parent.parent.parent
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
@@ -32,6 +33,7 @@ from experiment.llm_client import LLMClientFactory
 from experiment.data_loader import ValueModelLoader
 from experiment.profile_experiment.profile_generator import ProfileGenerator
 from experiment.profile_experiment.profile_visualizer import ProfileVisualizer
+from experiment import paths as exp_paths
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +48,7 @@ def load_config(config_path: str) -> dict:
 
 
 def resolve_path(base: Path, rel: str) -> str:
-    """Resolve a relative path to an absolute path based on the experiment directory."""
+    """Resolve a relative path against a base directory."""
     p = base / rel
     return str(p)
 
@@ -56,41 +58,49 @@ def main():
     parser.add_argument(
         "--config",
         default=str(src_path / "experiment" / "config.yaml"),
-        help="Path to configuration file",
+        help="Config file path",
     )
     parser.add_argument(
         "--experiments",
         default="all",
-        help="Which experiments to run, comma-separated (1,2,3 or all)",
+        help="Experiments to run, comma-separated (1,2,3 or all)",
     )
-    parser.add_argument("--force-api", action="store_true", help="Force re-calling the API")
+    parser.add_argument("--force-api", action="store_true", help="Force re-calling APIs")
     parser.add_argument("--output-dir", default=None, help="Override output directory")
     parser.add_argument("--tables-dir", default=None, help="Value model tables directory")
     args = parser.parse_args()
 
-    # Parse experiments to run
+    # 解析要运行的实验
     if args.experiments == "all":
         exp_ids = {1, 2, 3}
     else:
         exp_ids = {int(x.strip()) for x in args.experiments.split(",")}
 
-    # Load configuration
+    # 加载配置
     config = load_config(args.config)
     llm_configs = config.get("llm_models", {})
     profile_cfg = config.get("profile_experiment", {})
 
-    # Base directory
+    # Base directories
     exp_base = src_path / "experiment"
 
-    # Output directory
+    # Output and cache directories
     output_dir = args.output_dir or resolve_path(
-        exp_base, profile_cfg.get("output_dir", "experiment_results/profile")
+        project_root,
+        profile_cfg.get(
+            "output_dir",
+            str(exp_paths.PROFILE_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+        ),
     )
     cache_dir = resolve_path(
-        exp_base, profile_cfg.get("cache_dir", "experiment_logs/profile_cache")
+        project_root,
+        profile_cfg.get(
+            "cache_dir",
+            str(exp_paths.PROFILE_CACHE_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+        ),
     )
 
-    # Value model
+    # 价值模型
     tables_dir = args.tables_dir or str(project_root / "tables")
     value_loader = ValueModelLoader(tables_dir)
     value_loader.load()
@@ -101,16 +111,16 @@ def main():
     llm_clients = LLMClientFactory.create_all_enabled(llm_configs)
     logger.info(f"Available LLMs: {list(llm_clients.keys())}")
 
-    # Core components
+    # 核心组件
     generator = ProfileGenerator(llm_clients, value_model_text, cache_dir=cache_dir)
     viz = ProfileVisualizer(output_dir)
 
-    # Repository configuration
+    # Repository configurations
     repos = profile_cfg.get("repos", [])
     for repo in repos:
         repo["path"] = resolve_path(exp_base, repo["path"])
 
-    # Record start time
+    # 记录开始
     start_time = time.time()
     all_results = {}
 
@@ -143,7 +153,7 @@ def main():
 
         exp2_cfg = profile_cfg.get("exp2_cross_model", {})
         models = exp2_cfg.get("models", list(llm_clients.keys()))
-        # Only keep available models
+        # 只保留可用的模型
         models = [m for m in models if m in llm_clients]
 
         results = run_exp2(
@@ -164,20 +174,31 @@ def main():
         exp3_cfg = profile_cfg.get("exp3_downstream", {})
         model = exp3_cfg.get("model", "qwen-plus")
 
-        # IAA cache directory
+            # IAA cache directory
         iaa_cfg = config.get("iaa_experiment", {})
-        iaa_cache_dir = resolve_path(exp_base, iaa_cfg.get("llm_outputs_dir", "experiment_logs/llm_outputs"))
+        iaa_cache_dir = resolve_path(
+            project_root,
+            iaa_cfg.get(
+                "llm_outputs_dir",
+                str(exp_paths.LLM_OUTPUTS_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+            ),
+        )
 
-        # Requires Exp1's Profile
+        # 需要 Exp1 的 Profile
         profiles = {}
         if "exp1" in all_results and "profiles" in all_results["exp1"]:
             profiles = all_results["exp1"]["profiles"]
         else:
-            # Try to generate Profile for each project
-            logger.info("[Exp3] Exp1 results unavailable, generating Profile for each project ...")
+            # 尝试为每个项目生成 Profile
+            logger.info("[Exp3] Exp1 results unavailable; generating profiles for each repo ...")
             for repo in repos:
                 docs = generator.collect_documents(repo["path"], repo.get("doc_sources", []))
-                p = generator.generate_profile(repo["name"], model, docs, force_api=args.force_api)
+                p = generator.generate_profile(
+                    repo["name"], model, docs,
+                    force_api=args.force_api,
+                    repo_path=repo["path"],
+                    use_code_evidence=True,
+                )
                 profiles[repo["name"]] = p
 
         results = run_exp3(
@@ -191,15 +212,15 @@ def main():
         all_results["exp3"] = results
 
     # ====================================================================
-    # Comprehensive report
+    # Combined report
     # ====================================================================
     elapsed = time.time() - start_time
     logger.info("=" * 60)
-    logger.info(f"All experiments completed! Time elapsed: {elapsed:.1f}s")
+    logger.info(f"All experiments completed in {elapsed:.1f}s")
     logger.info(f"Output directory: {output_dir}")
     logger.info("=" * 60)
 
-    # Write comprehensive summary
+    # Write summary
     summary = {
         "experiments_run": sorted(exp_ids),
         "elapsed_seconds": round(elapsed, 1),
@@ -227,9 +248,9 @@ def main():
     summary_path.write_text(
         json.dumps(summary, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
     )
-    logger.info(f"Comprehensive summary: {summary_path}")
+    logger.info(f"综合摘要: {summary_path}")
 
-    # Print key results
+    # 打印关键结果
     print("\n" + "=" * 60)
     print("VALUE PROFILE EVALUATION — KEY RESULTS")
     print("=" * 60)

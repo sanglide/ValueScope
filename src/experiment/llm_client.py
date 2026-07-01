@@ -1,6 +1,6 @@
 """
-LLM Client Module
-Unified API interface supporting multiple large language model providers
+LLM客户端模块
+支持多种大模型API的统一调用接口
 """
 
 import os
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 @dataclass
 class LLMResponse:
-    """LLM response data class"""
+    """LLM响应数据类"""
     model_name: str
     raw_response: str
     parsed_result: Optional[dict] = None
@@ -22,36 +22,36 @@ class LLMResponse:
 
 
 class BaseLLMClient(ABC):
-    """LLM client base class"""
+    """LLM客户端基类"""
     
     def __init__(self, model_config: dict):
         self.model_name = model_config.get("model_name")
         self.temperature = model_config.get("temperature", 0.0)
         self.max_tokens = model_config.get("max_tokens", 2048)
         self.api_key = self._get_api_key(model_config.get("api_key_env"))
-        # base_url supports direct configuration or reading from environment variables
+        # base_url 支持直接配置或从环境变量读取
         self.base_url = model_config.get("base_url") or self._get_api_key(model_config.get("base_url_env"))
     
     def _get_api_key(self, env_var: str) -> Optional[str]:
-        """Get API Key from environment variable"""
+        """从环境变量获取API Key"""
         if env_var:
             return os.getenv(env_var)
         return None
     
     @abstractmethod
     def call(self, system_prompt: str, user_prompt: str) -> LLMResponse:
-        """Call LLM API"""
+        """调用LLM API"""
         pass
     
     def parse_json_response(self, response_text: str) -> Optional[dict]:
-        """Parse JSON from response"""
-        # Try direct parsing
+        """从响应中解析JSON"""
+        # 尝试直接解析
         try:
             return json.loads(response_text)
         except json.JSONDecodeError:
             pass
         
-        # Try extracting JSON from markdown code blocks
+        # 尝试从markdown代码块中提取JSON
         json_pattern = r'```(?:json)?\s*([\s\S]*?)```'
         matches = re.findall(json_pattern, response_text)
         for match in matches:
@@ -60,7 +60,7 @@ class BaseLLMClient(ABC):
             except json.JSONDecodeError:
                 continue
         
-        # Try finding JSON object
+        # 尝试找到JSON对象
         json_obj_pattern = r'\{[\s\S]*\}'
         matches = re.findall(json_obj_pattern, response_text)
         for match in matches:
@@ -73,12 +73,12 @@ class BaseLLMClient(ABC):
 
 
 class OpenAIClient(BaseLLMClient):
-    """OpenAI API client (also supports OpenAI API-compatible services)"""
+    """OpenAI API客户端（也支持兼容OpenAI API的服务）"""
     
     def __init__(self, model_config: dict):
         super().__init__(model_config)
         try:
-            # Azure OpenAI requires special handling
+            # Azure OpenAI 需要特殊处理
             if model_config.get("azure"):
                 from openai import AzureOpenAI
                 self.client = AzureOpenAI(
@@ -93,7 +93,7 @@ class OpenAIClient(BaseLLMClient):
                     kwargs["base_url"] = self.base_url
                 self.client = OpenAI(**kwargs)
         except ImportError:
-            raise ImportError("Please install the openai library: pip install openai")
+            raise ImportError("请安装openai库: pip install openai")
     
     def call(self, system_prompt: str, user_prompt: str) -> LLMResponse:
         import time
@@ -126,10 +126,27 @@ class OpenAIClient(BaseLLMClient):
                 error=str(e),
                 latency_ms=(time.time() - start_time) * 1000
             )
+    
+    def send_request(self, messages: list) -> str:
+        """发送消息列表并返回原始文本响应"""
+        import time
+        start_time = time.time()
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+            
+            return response.choices[0].message.content
+        except Exception as e:
+            raise Exception(f"LLM request failed: {str(e)}")
 
 
 class AnthropicClient(BaseLLMClient):
-    """Anthropic Claude API client"""
+    """Anthropic Claude API客户端"""
     
     def __init__(self, model_config: dict):
         super().__init__(model_config)
@@ -140,7 +157,7 @@ class AnthropicClient(BaseLLMClient):
                 kwargs["base_url"] = self.base_url
             self.client = anthropic.Anthropic(**kwargs)
         except ImportError:
-            raise ImportError("Please install the anthropic library: pip install anthropic")
+            raise ImportError("请安装anthropic库: pip install anthropic")
     
     def call(self, system_prompt: str, user_prompt: str) -> LLMResponse:
         import time
@@ -172,10 +189,36 @@ class AnthropicClient(BaseLLMClient):
                 error=str(e),
                 latency_ms=(time.time() - start_time) * 1000
             )
+    
+    def send_request(self, messages: list) -> str:
+        """发送消息列表并返回原始文本响应"""
+        import time
+        start_time = time.time()
+        
+        try:
+            # Anthropic 需要分离 system prompt
+            system_msg = None
+            user_messages = []
+            for msg in messages:
+                if msg["role"] == "system":
+                    system_msg = msg["content"]
+                else:
+                    user_messages.append(msg)
+            
+            response = self.client.messages.create(
+                model=self.model_name,
+                max_tokens=self.max_tokens,
+                system=system_msg or "",
+                messages=user_messages
+            )
+            
+            return response.content[0].text
+        except Exception as e:
+            raise Exception(f"LLM request failed: {str(e)}")
 
 
 class GeminiClient(BaseLLMClient):
-    """Google Gemini API client (using the latest google-genai SDK)"""
+    """Google Gemini API客户端（使用最新 google-genai SDK）"""
 
     def __init__(self, model_config: dict):
         super().__init__(model_config)
@@ -185,7 +228,7 @@ class GeminiClient(BaseLLMClient):
             self.genai = genai
             self.types = types
 
-            # Proxy support: prioritize proxy from model_config, then environment variables
+            # 代理支持：优先读取 model_config 中的 proxy，其次读取环境变量
             proxy = (
                 model_config.get("proxy")
                 or os.getenv("HTTPS_PROXY")
@@ -201,7 +244,7 @@ class GeminiClient(BaseLLMClient):
             else:
                 self.client = genai.Client(api_key=self.api_key)
         except ImportError:
-            raise ImportError("Please install the google-genai library: pip install google-genai")
+            raise ImportError("请安装google-genai库: pip install google-genai")
 
     def call(self, system_prompt: str, user_prompt: str) -> LLMResponse:
         import time
@@ -233,10 +276,39 @@ class GeminiClient(BaseLLMClient):
                 error=str(e),
                 latency_ms=(time.time() - start_time) * 1000
             )
+    
+    def send_request(self, messages: list) -> str:
+        """发送消息列表并返回原始文本响应"""
+        import time
+        start_time = time.time()
+        
+        try:
+            # Gemini 需要分离 system prompt
+            system_msg = None
+            contents = []
+            for msg in messages:
+                if msg["role"] == "system":
+                    system_msg = msg["content"]
+                else:
+                    contents.append(msg["content"])
+            
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents="\n".join(contents),
+                config=self.types.GenerateContentConfig(
+                    system_instruction=system_msg or "",
+                    temperature=self.temperature,
+                    max_output_tokens=self.max_tokens,
+                )
+            )
+            
+            return response.text
+        except Exception as e:
+            raise Exception(f"LLM request failed: {str(e)}")
 
 
 class LLMClientFactory:
-    """LLM client factory class"""
+    """LLM客户端工厂类"""
 
     _providers = {
         "openai": OpenAIClient,
@@ -246,25 +318,25 @@ class LLMClientFactory:
     
     @classmethod
     def register_provider(cls, provider_name: str, client_class: type):
-        """Register a new LLM provider"""
+        """注册新的LLM提供商"""
         cls._providers[provider_name] = client_class
     
     @classmethod
     def create(cls, model_config: dict) -> BaseLLMClient:
-        """Create an LLM client based on configuration"""
+        """根据配置创建LLM客户端"""
         provider = model_config.get("provider", "openai")
         if provider not in cls._providers:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
+            raise ValueError(f"不支持的LLM提供商: {provider}")
         return cls._providers[provider](model_config)
     
     @classmethod
     def create_all_enabled(cls, llm_configs: dict) -> dict[str, BaseLLMClient]:
-        """Create all enabled LLM clients"""
+        """创建所有启用的LLM客户端"""
         clients = {}
         for model_key, config in llm_configs.items():
             if config.get("enabled", True):
                 try:
                     clients[model_key] = cls.create(config)
                 except Exception as e:
-                    print(f"Warning: Unable to create {model_key} client: {e}")
+                    print(f"警告: 无法创建{model_key}客户端: {e}")
         return clients

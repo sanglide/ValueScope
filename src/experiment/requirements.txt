@@ -1,14 +1,14 @@
-# Experiment evaluation module dependencies
+# 实验评估模块依赖
 
-# LLM API client
+# LLM API客户端
 openai>=1.0.0
 anthropic>=0.18.0
 
-# Configuration file parsing
+# 配置文件解析
 pyyaml>=6.0
 
-# Numerical computation
+# 数值计算
 numpy>=1.24.0
 
-# Optional: progress bar display
+# 可选：进度条显示
 tqdm>=4.65.0

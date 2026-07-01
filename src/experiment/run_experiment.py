@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 """
-Main script for value hypothesis identification experiments.
-Evaluates the ability of different LLMs to generate value hypotheses in value scenarios.
+Main value-hypothesis identification experiment script.
 
-Supports two scenario types:
-  - code: Code scenarios (sample_scenarios.json)
-  - text: Issue text scenarios (values-issues-dataset-master)
+Evaluates how well different LLMs generate value hypotheses for code and text scenarios.
 
-Experiment results are reported separately along three dimensions: code / text / overall.
+Supported scenario types:
+  - code: code scenarios (code_scenarios/*.json)
+  - text: issue discussions (text_scenarios/issues.json)
+
+Results are reported per code / text / overall.
 """
 
 import argparse
@@ -39,6 +40,7 @@ try:
         create_ground_truth_metrics
     )
     from .report_generator import ReportGenerator, DetailedReportGenerator
+    from . import paths as exp_paths
 except ImportError:
     from llm_client import LLMClientFactory, LLMResponse, BaseLLMClient
     from data_loader import (
@@ -56,10 +58,11 @@ except ImportError:
         create_ground_truth_metrics
     )
     from report_generator import ReportGenerator, DetailedReportGenerator
+    import paths as exp_paths
 
 
 class ValueRiskExperiment:
-    """Value risk identification experiment class"""
+    """价值风险识别实验类"""
 
     def __init__(self, config_path: str = "config.yaml"):
         self.config = self._load_config(config_path)
@@ -68,20 +71,24 @@ class ValueRiskExperiment:
         self.metrics_calculator = MetricsCalculator(
             confidence_threshold=self.config.get("evaluation", {}).get("confidence_threshold", 0.5)
         )
-        # Store samples by scenario type
-        self.datasets: dict[str, list[ValueScenarioSample]] = {}  # "code" / "text"
-        # Store prediction results by (model_key, scenario_type)
+        # Datasets indexed by scenario type ("code" / "text")
+        self.datasets: dict[str, list[ValueScenarioSample]] = {}
+        # Predictions indexed by (model_key, scenario_type)
         self.results: dict[str, dict[str, list[PredictionResult]]] = {}
         
-        # Set up logging
-        self.log_dir = Path(__file__).parent / self.config.get("output", {}).get("logs_dir", "experiment_logs")
+        # Logging
+        project_root = Path(__file__).parent.parent.parent
+        self.log_dir = project_root / self.config.get(
+            "output", {}
+        ).get(
+            "logs_dir",
+            str(exp_paths.LOGS_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+        )
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Log file
+
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_file = self.log_dir / f"experiment_{timestamp}.log"
-        
-        # Configure logging
+
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
@@ -91,18 +98,18 @@ class ValueRiskExperiment:
             ]
         )
         self.logger = logging.getLogger(__name__)
-        
-        # Create storage directories for aggregated data and LLM outputs
+
+        # 创建聚合数据和LLM输出的存储目录
         self.aggregated_data_dir = self.log_dir / "aggregated_data"
-        self.llm_outputs_dir = self.log_dir / "llm_outputs"
+        self.llm_outputs_dir = exp_paths.LLM_OUTPUTS_DIR
         self.aggregated_data_dir.mkdir(exist_ok=True)
-        self.llm_outputs_dir.mkdir(exist_ok=True)
+        self.llm_outputs_dir.mkdir(parents=True, exist_ok=True)
 
     def _load_config(self, config_path: str) -> dict:
-        """Load configuration file"""
+        """加载配置文件"""
         config_file = Path(__file__).parent / config_path
         if not config_file.exists():
-            raise FileNotFoundError(f"Configuration file not found: {config_file}")
+            raise FileNotFoundError(f"配置文件不存在: {config_file}")
         with open(config_file, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
 
@@ -110,43 +117,43 @@ class ValueRiskExperiment:
     # setup
     # ------------------------------------------------------------------
     def setup(self, tables_dir: str = None, data_file: str = None) -> None:
-        """Initialize experiment environment"""
+        """初始化实验环境"""
         print("=" * 60)
-        print("Initializing experiment environment")
+        print("初始化实验环境")
         print("=" * 60)
 
-        # Load value model
+        # 加载价值模型
         if tables_dir is None:
             tables_dir = Path(__file__).parent.parent.parent / "tables"
         self.value_model_loader = ValueModelLoader(str(tables_dir))
         self.value_model_loader.load()
-        print(f"Loaded {len(self.value_model_loader.l2_values)} L2 values, "
-              f"{len(self.value_model_loader.l3_values)} L3 values")
+        print(f"已加载 {len(self.value_model_loader.l2_values)} 个L2价值, "
+              f"{len(self.value_model_loader.l3_values)} 个L3价值")
 
-        # Load datasets -- prefer command-line argument; otherwise load from config.yaml
+        # 加载数据集 —— 优先使用命令行参数，否则按config.yaml配置加载
         if data_file:
             self._load_single_data_file(data_file)
         else:
             self._load_datasets_from_config()
 
-        # Create LLM clients
+        # 创建LLM客户端
         llm_configs = self.config.get("llm_models", {})
         self.llm_clients = LLMClientFactory.create_all_enabled(llm_configs)
-        print(f"Created {len(self.llm_clients)} LLM client(s): {list(self.llm_clients.keys())}")
+        print(f"已创建 {len(self.llm_clients)} 个LLM客户端: {list(self.llm_clients.keys())}")
         print()
 
     def _load_single_data_file(self, data_file: str) -> None:
-        """Load from a single file (backward compatible)"""
+        """从单个文件加载（向后兼容）"""
         loader = ScenarioDataLoader(data_file)
         if data_file.endswith('.json'):
             loader.load_from_json(data_file)
         elif data_file.endswith('.csv'):
             loader.load_from_csv(data_file)
         self.datasets["code"] = loader.get_samples()
-        print(f"Loaded {len(self.datasets['code'])} scenario samples (from file)")
+        print(f"已加载 {len(self.datasets['code'])} 个场景样本 (from file)")
 
     def _load_datasets_from_config(self) -> None:
-        """Load multiple datasets based on the datasets configuration in config.yaml"""
+        """根据config.yaml中的datasets配置加载多个数据集"""
         datasets_config = self.config.get("datasets", {})
         base_dir = Path(__file__).parent
 
@@ -162,7 +169,14 @@ class ValueRiskExperiment:
                 loader = ScenarioDataLoader()
                 loader.load_from_json(str(ds_path))
                 samples = loader.get_samples()
-                # Tag each sample with scenario_type
+                # 为每个样本打上 scenario_type
+                for s in samples:
+                    s.metadata["scenario_type"] = scenario_type
+
+            elif ds_type == "json_dir":
+                loader = ScenarioDataLoader()
+                loader.load_from_directory(str(ds_path))
+                samples = loader.get_samples()
                 for s in samples:
                     s.metadata["scenario_type"] = scenario_type
 
@@ -174,26 +188,26 @@ class ValueRiskExperiment:
                     seed=ds_conf.get("seed", 42)
                 )
             else:
-                print(f"Warning: Unknown dataset type '{ds_type}', skipping {ds_key}")
+                print(f"警告: 未知的数据集类型 '{ds_type}'，跳过 {ds_key}")
                 continue
 
             if scenario_type not in self.datasets:
                 self.datasets[scenario_type] = []
             self.datasets[scenario_type].extend(samples)
-            print(f"[{ds_key}] Loaded {len(samples)} {scenario_type} sample(s)")
+            print(f"[{ds_key}] 已加载 {len(samples)} 个 {scenario_type} 样本")
 
         if not self.datasets:
-            print("No dataset configuration found, using built-in sample dataset")
+            print("未找到任何数据集配置，使用内置示例数据集")
             for sample in create_sample_dataset():
                 sample.metadata["scenario_type"] = "code"
             self.datasets["code"] = create_sample_dataset()
-            print(f"Loaded {len(self.datasets['code'])} built-in sample(s)")
+            print(f"已加载 {len(self.datasets['code'])} 个内置示例样本")
 
     # ------------------------------------------------------------------
     # prompt
     # ------------------------------------------------------------------
     def _get_prompt_name_for_scenario_type(self, scenario_type: str) -> str:
-        """Select the corresponding prompt based on scenario type"""
+        """根据场景类型选择对应的prompt"""
         prompts_config = self.config.get("prompts", {})
         mapping = {
             "code": "code_value_risk",
@@ -205,7 +219,7 @@ class ValueRiskExperiment:
         return "value_risk_identification"
 
     def _build_prompt(self, sample: ValueScenarioSample, prompt_name: str) -> tuple:
-        """Build prompt"""
+        """构建prompt"""
         prompts_config = self.config.get("prompts", {})
         prompt_config = prompts_config.get(prompt_name, prompts_config.get("value_risk_identification"))
 
@@ -217,7 +231,7 @@ class ValueRiskExperiment:
         user_prompt = user_prompt_template.replace("{value_scenario}", sample.scenario_content)
         user_prompt = user_prompt.replace("{value_model}", value_model_text)
         
-        # Log aggregated data
+        # 记录聚合后的数据
         sample_log = {
             "sample_id": sample.sample_id,
             "scenario_content": sample.scenario_content,
@@ -232,15 +246,15 @@ class ValueRiskExperiment:
         with open(sample_log_file, 'w', encoding='utf-8') as f:
             json.dump(sample_log, f, ensure_ascii=False, indent=2)
         
-        self.logger.info(f"Recorded aggregated data: {sample.sample_id}")
+        self.logger.info(f"已记录聚合数据: {sample.sample_id}")
 
         return system_prompt, user_prompt
 
     # ------------------------------------------------------------------
-    # LLM invocation & parsing
+    # LLM调用 & 解析
     # ------------------------------------------------------------------
     def _parse_llm_result(self, response: LLMResponse) -> tuple:
-        """Parse LLM response"""
+        """解析LLM响应"""
         if response.error or not response.parsed_result:
             return False, [], {}
 
@@ -265,7 +279,7 @@ class ValueRiskExperiment:
         scenario_type: str,
         verbose: bool = True
     ) -> list[PredictionResult]:
-        """Run a single model on a set of samples"""
+        """在一组样本上运行单个模型"""
         prompt_name = self._get_prompt_name_for_scenario_type(scenario_type)
         predictions = []
 
@@ -277,7 +291,7 @@ class ValueRiskExperiment:
             response = client.call(system_prompt, user_prompt)
             has_risk, values, confidences = self._parse_llm_result(response)
             
-            # Log LLM output
+            # 记录LLM输出
             llm_output_log = {
                 "sample_id": sample.sample_id,
                 "model": model_key,
@@ -299,7 +313,7 @@ class ValueRiskExperiment:
             with open(llm_output_file, 'w', encoding='utf-8') as f:
                 json.dump(llm_output_log, f, ensure_ascii=False, indent=2)
             
-            self.logger.info(f"Recorded LLM output: {model_key} - {sample.sample_id}")
+            self.logger.info(f"已记录LLM输出: {model_key} - {sample.sample_id}")
 
             pred = PredictionResult(
                 sample_id=sample.sample_id,
@@ -312,42 +326,42 @@ class ValueRiskExperiment:
             predictions.append(pred)
 
             if verbose and response.error:
-                print(f"    Warning: {response.error}")
+                print(f"    警告: {response.error}")
 
         return predictions
 
     # ------------------------------------------------------------------
-    # Main experiment logic
+    # 主实验逻辑
     # ------------------------------------------------------------------
     def run_experiment(
         self,
         parallel: bool = False,
         verbose: bool = True
     ) -> dict[str, dict[str, EvaluationMetrics]]:
-        """Run the full experiment
+        """运行完整实验
 
         Returns:
-            Nested dict: {scenario_type: {model_key: EvaluationMetrics}}
-            where scenario_type includes "code", "text", "overall"
+            嵌套字典: {scenario_type: {model_key: EvaluationMetrics}}
+            其中 scenario_type 包含 "code", "text", "overall"
         """
         total_samples = sum(len(v) for v in self.datasets.values())
         if total_samples == 0:
-            raise ValueError("No available scenario samples")
+            raise ValueError("没有可用的场景样本")
 
-        print(f"Starting experiment:")
+        print(f"开始实验:")
         for stype, samples in self.datasets.items():
             n_risk = sum(1 for s in samples if s.ground_truth_has_risk)
-            print(f"  {stype}: {len(samples)} samples (with risk={n_risk}, no risk={len(samples)-n_risk})")
-        print(f"  Number of models: {len(self.llm_clients)}")
+            print(f"  {stype}: {len(samples)} 个样本 (有风险={n_risk}, 无风险={len(samples)-n_risk})")
+        print(f"  模型数量: {len(self.llm_clients)}")
         print()
 
-        # Collect all (model_key, scenario_type) -> predictions
+        # 收集所有 (model_key, scenario_type) -> predictions
         all_predictions: dict[str, dict[str, list[PredictionResult]]] = {}
 
         for model_key, client in self.llm_clients.items():
             all_predictions[model_key] = {}
             for scenario_type, samples in self.datasets.items():
-                print(f"Running: {model_key} on {scenario_type} ({len(samples)} samples)")
+                print(f"运行: {model_key} on {scenario_type} ({len(samples)} samples)")
                 preds = self._run_model_on_samples(
                     model_key, client, samples, scenario_type, verbose
                 )
@@ -355,7 +369,7 @@ class ValueRiskExperiment:
 
         self.results = all_predictions
 
-        # Calculate metrics: per scenario_type + overall
+        # 计算指标: per scenario_type + overall
         metrics_by_type: dict[str, dict[str, EvaluationMetrics]] = {}
 
         for scenario_type in list(self.datasets.keys()) + ["overall"]:
@@ -363,7 +377,7 @@ class ValueRiskExperiment:
 
             for model_key in self.llm_clients:
                 if scenario_type == "overall":
-                    # Merge predictions from all types
+                    # 合并所有类型的predictions
                     combined = []
                     for st_preds in all_predictions[model_key].values():
                         combined.extend(st_preds)
@@ -373,7 +387,7 @@ class ValueRiskExperiment:
                 m = self.metrics_calculator.calculate(combined, model_key)
                 metrics_by_type[scenario_type][model_key] = m
 
-            # Add human annotation baseline
+            # 添加人工标注基准
             if scenario_type == "overall":
                 gt_samples = []
                 for samples in self.datasets.values():
@@ -398,7 +412,7 @@ class ValueRiskExperiment:
         return metrics_by_type
 
     # ------------------------------------------------------------------
-    # Report
+    # 报告
     # ------------------------------------------------------------------
     def generate_report(
         self,
@@ -406,8 +420,14 @@ class ValueRiskExperiment:
         experiment_name: str = "value_risk_experiment",
         output_formats: list[str] = None
     ) -> dict[str, str]:
-        """Generate experiment report"""
-        output_dir = str(Path(__file__).parent / self.config.get("output", {}).get("results_dir", "experiment_results"))
+        """Generate experiment report."""
+        project_root = Path(__file__).parent.parent.parent
+        output_dir = project_root / self.config.get(
+            "output", {}
+        ).get(
+            "results_dir",
+            str(exp_paths.RESULTS_DIR.relative_to(exp_paths.PROJECT_ROOT)),
+        )
         output_formats = output_formats or ["markdown", "latex", "csv"]
 
         generator = DetailedReportGenerator(output_dir)
@@ -432,13 +452,13 @@ class ValueRiskExperiment:
             for fmt, path in files.items():
                 saved_files[f"{scenario_type}_{fmt}"] = path
 
-        # Generate comprehensive detailed report
+        # 生成综合详细报告
         all_md_parts = [
             "# Value Risk Identification Experiment Report\n",
             f"**Generated at:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         ]
 
-        # Dataset statistics
+        # 数据集统计
         all_md_parts.append("## Dataset Summary\n")
         for stype, samples in self.datasets.items():
             n_risk = sum(1 for s in samples if s.ground_truth_has_risk)
@@ -455,7 +475,7 @@ class ValueRiskExperiment:
             all_md_parts.append(generator.generate_markdown_table(metrics_list))
             all_md_parts.append("")
 
-        # Combined LaTeX table (for paper)
+        # LaTeX综合表格（论文用）
         all_md_parts.append("## LaTeX Table (for paper)\n")
         all_md_parts.append("```latex")
         for scenario_type, metrics_dict in metrics_by_type.items():
@@ -475,71 +495,71 @@ class ValueRiskExperiment:
         detailed_file.write_text("\n".join(all_md_parts), encoding='utf-8')
         saved_files["full_report"] = str(detailed_file)
 
-        print(f"\nReports saved:")
+        print(f"\n报告已保存:")
         for fmt, path in saved_files.items():
             print(f"  - {fmt}: {path}")
 
         return saved_files
 
     # ------------------------------------------------------------------
-    # Dataset statistics
+    # 数据集统计
     # ------------------------------------------------------------------
     def print_dataset_statistics(self) -> None:
-        """Print dataset statistics"""
+        """打印数据集统计信息"""
         print("\n" + "=" * 60)
         print("  DATASET STATISTICS")
         print("=" * 60)
 
         for scenario_type, samples in self.datasets.items():
             print(f"\n--- {scenario_type.upper()} ---")
-            print(f"  Total samples: {len(samples)}")
+            print(f"  总样本数: {len(samples)}")
 
             n_risk = sum(1 for s in samples if s.ground_truth_has_risk)
             n_no_risk = len(samples) - n_risk
-            print(f"  With value risk: {n_risk}")
-            print(f"  Without value risk: {n_no_risk}")
+            print(f"  有价值风险: {n_risk}")
+            print(f"  无价值风险: {n_no_risk}")
 
-            # Value distribution
+            # 价值分布
             value_counts = {}
             for s in samples:
                 for v in s.ground_truth_values:
                     value_counts[v] = value_counts.get(v, 0) + 1
 
             if value_counts:
-                print(f"  Value label distribution:")
+                print(f"  价值标签分布:")
                 for vid, cnt in sorted(value_counts.items(), key=lambda x: -x[1]):
                     print(f"    {vid}: {cnt}")
 
-            # Distribution by project (for issues data)
+            # 按项目分布（针对issues数据）
             projects = {}
             for s in samples:
                 proj = s.metadata.get("project_name", "N/A")
                 projects[proj] = projects.get(proj, 0) + 1
             if len(projects) > 1:
-                print(f"  Project distribution:")
+                print(f"  项目分布:")
                 for p, c in sorted(projects.items()):
                     print(f"    {p}: {c}")
 
         total = sum(len(s) for s in self.datasets.values())
-        print(f"\nTotal: {total} samples")
+        print(f"\n总计: {total} 个样本")
         print("=" * 60 + "\n")
 
 
 def main():
-    """Main function"""
-    parser = argparse.ArgumentParser(description="Value hypothesis identification experiment")
-    parser.add_argument("--config", default="config.yaml", help="Path to configuration file")
-    parser.add_argument("--data", help="Path to scenario data file (JSON or CSV, overrides datasets config)")
-    parser.add_argument("--tables-dir", help="Directory containing value model tables")
-    parser.add_argument("--parallel", action="store_true", help="Run models in parallel")
-    parser.add_argument("--output-name", default="value_risk_experiment", help="Output filename prefix")
-    parser.add_argument("--generate-sample-data", help="Generate sample dataset to the specified file")
-    parser.add_argument("--stats-only", action="store_true", help="Only print dataset statistics without running the experiment")
-    parser.add_argument("--quiet", action="store_true", help="Quiet mode")
+    """主函数"""
+    parser = argparse.ArgumentParser(description="价值假说识别实验")
+    parser.add_argument("--config", default="config.yaml", help="配置文件路径")
+    parser.add_argument("--data", help="场景数据文件路径 (JSON或CSV, 覆盖config中的datasets配置)")
+    parser.add_argument("--tables-dir", help="价值模型表格目录")
+    parser.add_argument("--parallel", action="store_true", help="并行执行模型")
+    parser.add_argument("--output-name", default="value_risk_experiment", help="输出文件名前缀")
+    parser.add_argument("--generate-sample-data", help="生成示例数据集到指定文件")
+    parser.add_argument("--stats-only", action="store_true", help="仅输出数据集统计信息，不运行实验")
+    parser.add_argument("--quiet", action="store_true", help="安静模式")
 
     args = parser.parse_args()
 
-    # Generate sample dataset
+    # 生成示例数据集
     if args.generate_sample_data:
         save_sample_dataset(args.generate_sample_data)
         return
@@ -548,23 +568,23 @@ def main():
         experiment = ValueRiskExperiment(args.config)
         experiment.setup(tables_dir=args.tables_dir, data_file=args.data)
 
-        # Print dataset statistics
+        # 输出数据集统计
         experiment.print_dataset_statistics()
 
         if args.stats_only:
             return
 
-        # Run experiment
+        # 运行实验
         metrics_by_type = experiment.run_experiment(
             parallel=args.parallel,
             verbose=not args.quiet
         )
 
-        # Generate report
+        # 生成报告
         experiment.generate_report(metrics_by_type, experiment_name=args.output_name)
 
     except Exception as e:
-        print(f"Experiment execution failed: {e}")
+        print(f"实验执行失败: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

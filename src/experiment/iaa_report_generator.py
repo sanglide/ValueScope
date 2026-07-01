@@ -1,6 +1,6 @@
 """
-IAA Report Generation Module
-Generates Markdown / LaTeX reports for the agreement experiment.
+IAA report generation module.
+Produces Markdown / LaTeX reports for inter-annotator agreement experiments.
 """
 
 from pathlib import Path
@@ -12,12 +12,14 @@ try:
         VALUE_NAMES,
         IAAExperimentResults,
     )
+    from . import paths as exp_paths
 except ImportError:
     from iaa_data_structures import (
         ALL_VALUE_IDS,
         VALUE_NAMES,
         IAAExperimentResults,
     )
+    import paths as exp_paths
 
 
 def _interpret_kappa(k: float) -> str:
@@ -37,23 +39,28 @@ def _interpret_kappa(k: float) -> str:
 
 
 class IAAReportGenerator:
-    """IAA Agreement Experiment Report Generator"""
+    """IAA experiment report generator."""
 
-    def __init__(self, output_dir: str = "experiment_results/iaa"):
+    def __init__(self, output_dir: str = None):
+        if output_dir is None:
+            output_dir = str(exp_paths.IAA_DIR.relative_to(exp_paths.PROJECT_ROOT))
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        if not self.output_dir.is_absolute():
+            project_root = Path(__file__).parent.parent.parent
+            self.output_dir = project_root / self.output_dir
 
     # ------------------------------------------------------------------
-    # Markdown Report
+    # Markdown reports
     # ------------------------------------------------------------------
     def generate_pairwise_matrix_md(self, results: IAAExperimentResults) -> str:
-        """Generate pairwise agreement matrix (upper triangle = kappa, lower triangle = %agree)."""
+        """Generate a pairwise agreement matrix (upper=triangular κ, lower=%agree)."""
         ids = results.annotator_ids
         n = len(ids)
         if n == 0:
             return ""
 
-        # Build fast lookup table
+        # 建立快速查找表
         lookup = {}
         for pr in results.pairwise.values():
             a, b = pr.annotator_a, pr.annotator_b
@@ -65,7 +72,7 @@ class IAAReportGenerator:
             "Upper triangle: Cohen's κ | Lower triangle: Percent Agreement\n",
         ]
 
-        # Header
+        # 表头
         header = "| | " + " | ".join(ids) + " |"
         sep = "|---|" + "|".join(["---"] * n) + "|"
         lines.append(header)
@@ -77,11 +84,11 @@ class IAAReportGenerator:
                 if i == j:
                     cells.append("—")
                 elif i < j:
-                    # Upper triangle: Cohen's kappa
+                    # 上三角: Cohen's κ
                     pr = lookup.get((row_id, col_id))
                     cells.append(f"{pr.dim1_cohen_kappa:.3f}" if pr else "N/A")
                 else:
-                    # Lower triangle: Percent Agreement
+                    # 下三角: Percent Agreement
                     pr = lookup.get((row_id, col_id))
                     cells.append(f"{pr.dim1_percent_agreement:.1%}" if pr else "N/A")
             lines.append("| " + " | ".join(cells) + " |")
@@ -91,7 +98,7 @@ class IAAReportGenerator:
     def generate_overall_table_md(
         self, results_by_scenario: dict[str, IAAExperimentResults]
     ) -> str:
-        """Generate overall IAA statistics table."""
+        """生成总体 IAA 统计表"""
         scenarios = [s for s in ["code", "text", "overall"] if s in results_by_scenario]
         if not scenarios:
             return ""
@@ -102,7 +109,7 @@ class IAAReportGenerator:
             "|---|---| " + " | ".join(["---"] * len(scenarios)) + " |",
         ]
 
-        # Dimension 1 metrics
+        # 维度1 指标
         dim1_metrics = [
             ("dim1_fleiss_kappa", "Fleiss κ"),
             ("dim1_krippendorff_alpha", "Krippendorff α"),
@@ -118,7 +125,7 @@ class IAAReportGenerator:
                 cells.append(f"{val:.4f}")
             lines.append("| " + " | ".join(cells) + " |")
 
-        # Dimension 2 metrics
+        # 维度2 指标
         dim2_metrics = [
             ("dim2_macro_avg_value_kappa", "Macro Fleiss κ"),
             ("dim2_avg_pairwise_jaccard", "Avg Pairwise Jaccard"),
@@ -135,7 +142,7 @@ class IAAReportGenerator:
         return "\n".join(lines)
 
     def generate_per_value_table_md(self, results: IAAExperimentResults) -> str:
-        """Generate Per-Value Fleiss' Kappa table."""
+        """生成 Per-Value Fleiss' Kappa 表"""
         if not results.multi_annotator:
             return ""
 
@@ -158,8 +165,8 @@ class IAAReportGenerator:
         return "\n".join(lines)
 
     def generate_human_vs_llm_table_md(self, results: IAAExperimentResults) -> str:
-        """Generate Human vs. each LLM dedicated comparison table."""
-        # Find Human-related pairs
+        """生成 Human vs 各 LLM 专项对比表"""
+        # 找到 Human 相关的 pair
         human_pairs = {}
         for key, pr in results.pairwise.items():
             if pr.annotator_a == "Human":
@@ -216,15 +223,15 @@ class IAAReportGenerator:
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # LaTeX Report
+    # LaTeX 报告
     # ------------------------------------------------------------------
     def generate_latex_tables(
         self, results_by_scenario: dict[str, IAAExperimentResults]
     ) -> str:
-        """Generate LaTeX booktabs-format tables."""
+        """生成 LaTeX booktabs 格式表格"""
         sections = []
 
-        # Overall table
+        # Overall 表
         scenarios = [s for s in ["code", "text", "overall"] if s in results_by_scenario]
         if scenarios:
             cols = "l l " + " ".join(["c"] * len(scenarios))
@@ -273,7 +280,7 @@ class IAAReportGenerator:
             ])
             sections.append("\n".join(lines))
 
-        # Per-value kappa table
+        # Per-value κ 表
         overall = results_by_scenario.get("overall")
         if overall and overall.multi_annotator:
             kappas = overall.multi_annotator.dim2_per_value_fleiss_kappa
@@ -309,17 +316,17 @@ class IAAReportGenerator:
         return "\n\n".join(sections)
 
     # ------------------------------------------------------------------
-    # Save
+    # 保存
     # ------------------------------------------------------------------
     def save_all(
         self,
         results_by_scenario: dict[str, IAAExperimentResults],
         output_dir: Optional[str] = None,
     ) -> dict[str, str]:
-        """Save all report files.
+        """保存所有报告文件
 
         Returns:
-            {report_name: file_path}
+            {报告名: 文件路径}
         """
         out = Path(output_dir) if output_dir else self.output_dir
         out.mkdir(parents=True, exist_ok=True)
@@ -346,7 +353,7 @@ class IAAReportGenerator:
             saved["iaa_overall_table.md"] = str(fpath)
             full_report_parts.append(f"\n{md}")
 
-        # Per-value kappa (using overall results)
+        # Per-value kappa (用 overall 结果)
         overall = results_by_scenario.get("overall")
         if overall:
             md = self.generate_per_value_table_md(overall)

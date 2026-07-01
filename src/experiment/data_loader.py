@@ -1,6 +1,6 @@
 """
-Data loading module
-Responsible for loading value scenarios, value models, and human annotation data
+数据加载模块
+负责加载价值场景、价值模型和人工标注数据
 """
 
 import csv
@@ -13,8 +13,8 @@ from typing import Optional
 
 @dataclass
 class ValueDefinition:
-    """Value definition data class"""
-    layer: str  # L2 or L3
+    """价值定义数据类"""
+    layer: str  # L2 或 L3
     value_id: str
     value_name: str
     schwartz_mapping: str
@@ -24,16 +24,16 @@ class ValueDefinition:
 
 @dataclass
 class ValueScenarioSample:
-    """Value scenario sample data class"""
+    """价值场景样本数据类"""
     sample_id: str
-    scenario_content: str  # Code or scenario description
-    ground_truth_has_risk: bool  # Human annotation: whether risk exists
-    ground_truth_values: list[str] = field(default_factory=list)  # Human-annotated value ID list
-    metadata: dict = field(default_factory=dict)  # Additional metadata
+    scenario_content: str  # 代码或场景描述
+    ground_truth_has_risk: bool  # 人工标注：是否有风险
+    ground_truth_values: list[str] = field(default_factory=list)  # 人工标注的价值ID列表
+    metadata: dict = field(default_factory=dict)  # 其他元数据
 
 
 class ValueModelLoader:
-    """Value model loader"""
+    """价值模型加载器"""
     
     def __init__(self, tables_dir: str):
         self.tables_dir = Path(tables_dir)
@@ -41,15 +41,15 @@ class ValueModelLoader:
         self.l3_values: dict[str, ValueDefinition] = {}
     
     def load(self) -> None:
-        """Load all value models"""
+        """加载所有价值模型"""
         self._load_l2_values()
         self._load_l3_values()
     
     def _load_l2_values(self) -> None:
-        """Load L2-layer value themes"""
+        """加载L2层价值主题"""
         l2_file = self.tables_dir / "L2_Value_Themes.csv"
         if not l2_file.exists():
-            print(f"Warning: L2 value file does not exist: {l2_file}")
+            print(f"警告: L2价值文件不存在: {l2_file}")
             return
         
         with open(l2_file, 'r', encoding='utf-8') as f:
@@ -66,10 +66,10 @@ class ValueModelLoader:
                 self.l2_values[value_def.value_id] = value_def
     
     def _load_l3_values(self) -> None:
-        """Load L3-layer system value themes"""
+        """加载L3层系统价值主题"""
         l3_file = self.tables_dir / "L3_system_value_themes.csv"
         if not l3_file.exists():
-            print(f"Warning: L3 value file does not exist: {l3_file}")
+            print(f"警告: L3价值文件不存在: {l3_file}")
             return
         
         with open(l3_file, 'r', encoding='utf-8') as f:
@@ -86,20 +86,20 @@ class ValueModelLoader:
                 self.l3_values[value_def.value_id] = value_def
     
     def get_all_values(self) -> dict[str, ValueDefinition]:
-        """Get all value definitions"""
+        """获取所有价值定义"""
         return {**self.l2_values, **self.l3_values}
     
     def format_value_model_for_prompt(self, include_l2: bool = True, include_l3: bool = True) -> str:
-        """Format value model for prompt construction"""
+        """格式化价值模型用于prompt"""
         lines = []
         
         if include_l2 and self.l2_values:
-            lines.append("### Human Value Themes (L2)")
+            lines.append("### 人类价值主题 (L2)")
             for vid, vdef in self.l2_values.items():
                 lines.append(f"- **{vid} ({vdef.value_name})**: {vdef.definition}")
         
         if include_l3 and self.l3_values:
-            lines.append("\n### System Value Themes (L3)")
+            lines.append("\n### 系统价值主题 (L3)")
             for vid, vdef in self.l3_values.items():
                 lines.append(f"- **{vid} ({vdef.value_name})**: {vdef.definition}")
         
@@ -107,33 +107,38 @@ class ValueModelLoader:
 
 
 class ScenarioDataLoader:
-    """Value scenario data loader"""
+    """价值场景数据加载器"""
     
     def __init__(self, data_file: Optional[str] = None):
         self.data_file = Path(data_file) if data_file else None
         self.samples: list[ValueScenarioSample] = []
     
     def load_from_json(self, json_file: str) -> None:
-        """Load scenario data from a JSON file"""
+        """从JSON文件加载场景数据"""
         with open(json_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
+        existing_ids = {s.sample_id for s in self.samples}
         for item in data:
+            sample_id = item.get('id', '')
+            if sample_id in existing_ids:
+                continue
             sample = ValueScenarioSample(
-                sample_id=item.get('id', ''),
+                sample_id=sample_id,
                 scenario_content=item.get('scenario', ''),
                 ground_truth_has_risk=item.get('has_value_risk', False),
                 ground_truth_values=item.get('ground_truth_values', []),
                 metadata=item.get('metadata', {})
             )
             self.samples.append(sample)
+            existing_ids.add(sample_id)
     
     def load_from_csv(self, csv_file: str) -> None:
-        """Load scenario data from a CSV file"""
+        """从CSV文件加载场景数据"""
         with open(csv_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                # Parse ground_truth_values (assumed to be comma-separated)
+                # 解析ground_truth_values（假设用逗号分隔）
                 gt_values = []
                 if row.get('ground_truth_values'):
                     gt_values = [v.strip() for v in row['ground_truth_values'].split(',')]
@@ -146,28 +151,53 @@ class ScenarioDataLoader:
                     metadata={}
                 )
                 self.samples.append(sample)
+
+    def load_from_directory(self, directory: str, pattern: str = "*_scenarios.json") -> int:
+        """从目录中加载所有匹配的 JSON 文件
+        
+        Args:
+            directory: 目录路径
+            pattern: 文件名 glob 模式 (默认 *_scenarios.json)
+        
+        Returns:
+            加载的样本总数
+        """
+        dir_path = Path(directory)
+        if not dir_path.is_dir():
+            raise ValueError(f"Not a directory: {directory}")
+        
+        count = 0
+        for json_file in sorted(dir_path.glob(pattern)):
+            before = len(self.samples)
+            self.load_from_json(str(json_file))
+            loaded = len(self.samples) - before
+            if loaded > 0:
+                print(f"  [glob] {json_file.name}: {loaded} samples")
+                count += loaded
+        
+        return count
     
     def add_sample(self, sample: ValueScenarioSample) -> None:
-        """Manually add a sample"""
+        """手动添加样本"""
         self.samples.append(sample)
     
     def get_samples(self) -> list[ValueScenarioSample]:
-        """Get all samples"""
+        """获取所有样本"""
         return self.samples
 
 
 def create_sample_dataset() -> list[ValueScenarioSample]:
-    """Create a sample dataset (for testing purposes)"""
+    """创建示例数据集（用于测试）"""
     samples = [
         ValueScenarioSample(
             sample_id="sample_001",
             scenario_content="""
 def collect_user_data(user):
-    # Collect all browsing history of the user
+    # 收集用户的所有浏览历史
     history = get_browser_history(user.device_id)
-    # Collect location information
+    # 收集位置信息
     locations = get_location_history(user.device_id)
-    # Upload to server
+    # 上传到服务器
     upload_to_server({
         'user_id': user.id,
         'browser_history': history,
@@ -183,10 +213,10 @@ def collect_user_data(user):
             sample_id="sample_002",
             scenario_content="""
 def calculate_loan_eligibility(applicant):
-    # Determine loan eligibility based on zip code
+    # 基于邮政编码判断贷款资格
     if applicant.zip_code in HIGH_RISK_AREAS:
         return {"eligible": False, "reason": "Location-based restriction"}
-    # Determine eligibility based on age
+    # 基于年龄判断
     if applicant.age > 60:
         return {"eligible": False, "reason": "Age restriction"}
     return {"eligible": True}
@@ -215,7 +245,7 @@ def display_user_profile(user_id):
 
 
 def save_sample_dataset(output_file: str) -> None:
-    """Save the sample dataset to a JSON file"""
+    """保存示例数据集到JSON文件"""
     samples = create_sample_dataset()
     data = []
     for sample in samples:
@@ -229,14 +259,14 @@ def save_sample_dataset(output_file: str) -> None:
     
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"Sample dataset saved to: {output_file}")
+    print(f"示例数据集已保存到: {output_file}")
 
 
 # ==============================================================================
-# Issues Dataset Loader (values-issues-dataset-master)
+# Issues Dataset Loader (values_issues_dataset)
 # ==============================================================================
 
-# Mapping: proposed_values_id in issues dataset -> value_id in this project
+# 映射: issues数据集的proposed_values_id -> 本项目的value_id
 ISSUES_VALUE_ID_MAPPING = {
     "1": None,       # None -> no value
     "2": "HV9",      # Privacy
@@ -263,11 +293,13 @@ ISSUES_VALUE_ID_MAPPING = {
 
 
 class IssuesDatasetLoader:
-    """Loader for the values-issues-dataset-master dataset
-    
-    Aggregation granularity is at the issue level: concatenates all post texts
-    under the same issue, and merges (with deduplication) all post-level value
-    annotations as ground truth.
+    """加载values_issues_dataset数据集（CSV原始格式）
+
+    聚合粒度为issue级别：将同一issue下所有post文本拼接，
+    将所有post的价值标注合并去重作为ground truth。
+
+    注意：主实验现在统一使用 text_scenarios/issues.json（已规范化格式）。
+    本加载器保留用于从 text_scenarios/source/ 下的 CSV 原始文件重建数据。
     """
     
     def __init__(self, dataset_dir: str):
@@ -279,19 +311,19 @@ class IssuesDatasetLoader:
         max_text_length: int = 8000,
         seed: int = 42
     ) -> list[ValueScenarioSample]:
-        """Load and return issue-level scenario samples
+        """加载并返回issue级别的场景样本
         
         Args:
-            sample_per_project: Number of samples per project (None for all)
-            max_text_length: Maximum text length in characters (truncates overly long issues)
-            seed: Random seed
+            sample_per_project: 每个项目采样数量（None表示全量）
+            max_text_length: 文本最大字符数（截断过长的issue）
+            seed: 随机种子
         """
-        # 1. Load raw data
+        # 1. 加载原始数据
         issues = self._load_issues()
         posts = self._load_posts()
         labels = self._load_labels()
         
-        # 2. Aggregate post texts by issue
+        # 2. 按issue聚合post文本
         issue_texts = {}
         for post in posts:
             iid = post["issue_id"]
@@ -304,7 +336,7 @@ class IssuesDatasetLoader:
             else:
                 issue_texts[iid]["post_texts"].append(body)
         
-        # 3. Aggregate value annotations by issue (deduplicated, excluding None)
+        # 3. 按issue聚合value标注（去重，排除None）
         issue_values = {}
         for label in labels:
             iid = label["issue_id"]
@@ -312,10 +344,10 @@ class IssuesDatasetLoader:
             if iid not in issue_values:
                 issue_values[iid] = set()
             mapped = ISSUES_VALUE_ID_MAPPING.get(vid)
-            if mapped:  # Exclude None mappings
+            if mapped:  # 排除None映射
                 issue_values[iid].add(mapped)
         
-        # 4. Build samples
+        # 4. 构建样本
         samples_by_project: dict[str, list[ValueScenarioSample]] = {}
         
         for issue in issues:
@@ -323,13 +355,13 @@ class IssuesDatasetLoader:
             project = issue.get("project_name", "unknown")
             title = issue.get("title", "")
             
-            # Concatenate texts
+            # 拼接文本
             texts_data = issue_texts.get(iid, {"title_text": title, "post_texts": []})
             full_text = f"[Issue Title]: {texts_data['title_text']}\n\n"
             for i, pt in enumerate(texts_data["post_texts"], 1):
                 full_text += f"[Post {i}]:\n{pt}\n\n"
             
-            # Truncate overly long texts
+            # 截断过长文本
             if len(full_text) > max_text_length:
                 full_text = full_text[:max_text_length] + "\n\n[... truncated ...]"
             
@@ -356,18 +388,18 @@ class IssuesDatasetLoader:
                 samples_by_project[project] = []
             samples_by_project[project].append(sample)
         
-        # 5. Sampling
+        # 5. 采样
         if sample_per_project is not None:
             rng = random.Random(seed)
             sampled = []
             for project, project_samples in sorted(samples_by_project.items()):
-                # Balanced sampling: maintain the ratio of risk/no-risk as much as possible
+                # 平衡采样：尽量保持有风险/无风险的比例
                 with_risk = [s for s in project_samples if s.ground_truth_has_risk]
                 without_risk = [s for s in project_samples if not s.ground_truth_has_risk]
                 
                 n_risk = min(len(with_risk), sample_per_project // 2 + sample_per_project % 2)
                 n_no_risk = min(len(without_risk), sample_per_project - n_risk)
-                # If one category is insufficient, compensate from the other
+                # 如果某类不够，从另一类补
                 if n_no_risk < sample_per_project - n_risk:
                     n_risk = min(len(with_risk), sample_per_project - n_no_risk)
                 
@@ -381,36 +413,42 @@ class IssuesDatasetLoader:
             return all_samples
     
     def _load_issues(self) -> list[dict]:
-        """Load issues.csv"""
-        filepath = self.dataset_dir / "issues.csv"
+        """加载issues.csv"""
+        filepath = self.dataset_dir / "source" / "issues.csv"
+        if not filepath.exists():
+            filepath = self.dataset_dir / "issues.csv"
         with open(filepath, 'r', encoding='utf-8') as f:
             return list(csv.DictReader(f, delimiter='|'))
     
     def _load_posts(self) -> list[dict]:
-        """Load issue-posts.csv"""
-        filepath = self.dataset_dir / "issue-posts.csv"
+        """加载issue-posts.csv"""
+        filepath = self.dataset_dir / "source" / "issue-posts.csv"
+        if not filepath.exists():
+            filepath = self.dataset_dir / "issue-posts.csv"
         with open(filepath, 'r', encoding='utf-8') as f:
             return list(csv.DictReader(f, delimiter='|'))
     
     def _load_labels(self) -> list[dict]:
-        """Load values-label.csv"""
-        filepath = self.dataset_dir / "values-label.csv"
+        """加载values-label.csv"""
+        filepath = self.dataset_dir / "source" / "values-label.csv"
+        if not filepath.exists():
+            filepath = self.dataset_dir / "values-label.csv"
         with open(filepath, 'r', encoding='utf-8') as f:
             return list(csv.DictReader(f, delimiter='|'))
     
     def get_statistics(self) -> dict:
-        """Get dataset statistics"""
+        """获取数据集统计信息"""
         issues = self._load_issues()
         labels = self._load_labels()
         posts = self._load_posts()
         
-        # Project distribution
+        # 项目分布
         projects = {}
         for i in issues:
             p = i["project_name"]
             projects[p] = projects.get(p, 0) + 1
         
-        # Issue-level aggregated annotations
+        # issue级别聚合标注
         issue_values = {}
         for l in labels:
             iid = l["issue_id"]
@@ -424,13 +462,13 @@ class IssuesDatasetLoader:
         issues_with_risk = sum(1 for v in issue_values.values() if v)
         issues_no_risk = len(issues) - issues_with_risk
         
-        # Value distribution
+        # 价值分布
         value_counts = {}
         for vids in issue_values.values():
             for vid in vids:
                 value_counts[vid] = value_counts.get(vid, 0) + 1
         
-        # Post text lengths
+        # post文本长度
         issue_texts_len = {}
         for p in posts:
             iid = p["issue_id"]

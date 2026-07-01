@@ -1,5 +1,5 @@
 """
-Value hypothesis identification experiment evaluation module
+价值假说识别实验评估模块
 """
 
 from .llm_client import (
@@ -31,13 +31,13 @@ from .report_generator import (
 from .run_experiment import ValueRiskExperiment
 
 __all__ = [
-    # LLM client
+    # LLM客户端
     "LLMResponse",
     "BaseLLMClient",
     "OpenAIClient",
     "AnthropicClient",
     "LLMClientFactory",
-    # Data loading
+    # 数据加载
     "ValueDefinition",
     "ValueScenarioSample",
     "ValueModelLoader",
@@ -45,14 +45,14 @@ __all__ = [
     "IssuesDatasetLoader",
     "create_sample_dataset",
     "save_sample_dataset",
-    # Evaluator
+    # 评估器
     "PredictionResult",
     "EvaluationMetrics",
     "MetricsCalculator",
     "create_ground_truth_metrics",
-    # Report generation
+    # 报告生成
     "ReportGenerator",
     "DetailedReportGenerator",
-    # Experiment
+    # 实验
     "ValueRiskExperiment",
 ]

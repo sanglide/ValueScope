@@ -1,177 +1,202 @@
-# ValueScope
+# ValueGuard: Profile-Guided Value Risk Identification
 
-**A Multi-Agent System for Value-Oriented Analysis in Software Projects**
+This repository contains the implementation and evaluation code for **ValueGuard**, a profile-guided, evidence-verified approach to identifying human-value risks in software engineering artifacts (code changes and issue discussions).
 
-ValueScope is a multi-agent framework that analyzes code changes for potential value deviations in software projects. It employs a four-layer cross-layer reasoning approach grounded in Schwartz's theory of basic human values, tracing from normative values (L1) through human value themes (L2) and system value themes (L3) down to concrete code indicators (L4).
+## Research Question
 
+> To what extent does profile-guided, evidence-verified value risk identification (ValueGuard) improve agreement with human annotations compared to zero-shot LLM baselines, and what is the contribution of each pipeline component?
 
-## Project Structure
+- **RQ1 (Effectiveness)**: Does ValueGuard agree with human annotations significantly better than LLM-only zero-shot classification?
+- **RQ2 (Component Contribution)**: How much do the project-value profile and the evidence-verification step each contribute?
+- **RQ3 (Generalization)**: Are the conclusions stable across different LLM backbones?
+
+## Repository Structure
 
 ```
-ValueScope/
-├── pyproject.toml                     # Project configuration
-├── tables/                            # Value taxonomy definitions
-│   ├── L2_Value_Themes.csv            #   L2 Human Value Themes (HV1-HV10)
-│   └── L3_system_value_themes.csv     #   L3 System Value Themes (SV1-SV10)
+.
 ├── src/
-│   ├── valueguard/                    # Core multi-agent system
-│   │   ├── core/                      #   Dispatcher, models, config, exceptions
-│   │   ├── agents/                    #   Profiler, Hypothesis, Evidence agents
-│   │   ├── skills/                    #   Pluggable skills (LLM, AST, vector, etc.)
-│   │   ├── memory/                    #   Three-layer memory system
-│   │   ├── output/                    #   Report generation (JSON, Markdown, Console)
-│   │   └── adapters/                  #   CLI and GitHub Action adapters
-│   ├── experiment/                    # Experiment evaluation framework
-│   │   ├── config.yaml                #   Experiment configuration
-│   │   ├── data/                      #   Input datasets and repository data
-│   │   ├── experiment_logs/           #   LLM output caches and intermediate logs
-│   │   ├── experiment_results/        #   Final experiment outputs
-│   │   ├── profile_experiment/        #   Value Profile experiments (Exp 1-3)
-│   │   ├── iaa_experiment.py          #   Inter-Annotator Agreement experiment
-│   │   ├── pipeline_evaluator.py      #   End-to-end pipeline evaluation
-│   │   └── ...                        #   Supporting modules
+│   ├── experiment/                  # Experiment scripts and benchmarks
+│   │   ├── main_experiment.py       # Main experiment entry point
+│   │   ├── config.yaml              # Unified experiment configuration
+│   │   ├── benchmark_builder.py
+│   │   ├── unified_pipeline.py
+│   │   ├── pipeline_evaluator.py
+│   │   ├── iaa_experiment.py
+│   │   ├── run_experiment.py
+│   │   ├── traditional_baselines.py
+│   │   ├── report_generator.py
+│   │   ├── iaa_report_generator.py
+│   │   └── profile_experiment/      # Value-profile characterization experiments
+│   └── valueguard/                  # Core ValueGuard framework
+├── tables/                          # Value model definitions (L2/L3 themes)
+├── experiment_outputs/              # All experiment outputs (created at runtime)
+├── .env                             # API keys
+└── pyproject.toml
 ```
+
+All runtime artifacts (results, logs, caches) are written under a single root: `experiment_outputs/`.
 
 ## Installation
 
-### Requirements
-
-- Python >= 3.10, < 3.14
-
-### Setup
+Requires Python `>=3.10,<3.14`. We recommend [uv](https://docs.astral.sh/uv/) for dependency management.
 
 ```bash
-# Install base dependencies
-pip install -e .
-
-# Install experiment dependencies (scipy, matplotlib, scikit-learn)
-pip install -e ".[experiment]"
-
-# Or install experiment dependencies directly
-pip install -r src/experiment/requirements.txt
+pip install uv
+uv sync
 ```
 
-### Environment Variables
-
-Configure API keys for the LLM providers you intend to use:
+Create a `.env` file in the project root with your API keys:
 
 ```bash
-export OPENAI_API_KEY="your-openai-api-key"             # For GPT and o-series models
-export ANTHROPIC_API_KEY="your-anthropic-api-key"        # For Claude models
-export DEEPSEEK_API_KEY="your-deepseek-api-key"          # For DeepSeek models
-export GOOGLE_API_KEY="your-google-api-key"              # For Gemini models
-export XAI_API_KEY="your-xai-api-key"                    # For Grok models
-export DASHSCOPE_API_KEY="your-dashscope-api-key"        # For Qwen models
+DASHSCOPE_API_KEY=...
+DEEPSEEK_API_KEY=...
+GPTSAPI_KEY=...
 ```
 
-LLM model configurations are defined in `src/experiment/config.yaml` under the `llm_models` section.
+## Main Experiment
 
-## Experiments
+The main experiment compares ValueGuard against LLM-only and ablation baselines on a unified benchmark of code and text scenarios.
 
-All experiments are located under `src/experiment/`. Results are stored in `src/experiment/experiment_results/` and intermediate caches in `src/experiment/experiment_logs/`.
+### Quick Start
 
-### Experiment 1: Inter-Annotator Agreement (IAA)
-
-Evaluates the consistency of value risk identification across multiple LLM annotators and a human annotator. Computes agreement metrics on two dimensions:
-- **Dim1 (Risk Detection)**: Binary classification -- Cohen's Kappa, Fleiss' Kappa, Krippendorff's Alpha, Percent Agreement
-- **Dim2 (Value Identification)**: Multi-label -- Pairwise Jaccard, Symmetric F1, Per-value Fleiss' Kappa
+List all configured ablation variants:
 
 ```bash
-cd src/experiment
-python iaa_experiment.py --config config.yaml
+uv run python -m experiment.main_experiment --list-variants
 ```
 
-**Options:**
-- `--max-samples N`: Limit the number of samples processed
-- `--models model1 model2`: Run with specific LLM models only
-- `--output-dir DIR`: Override output directory
-
-**Output:** `src/experiment/experiment_results/iaa/`
-
-### Experiment 2: Pipeline Evaluation
-
-End-to-end evaluation of the Hypothesis Generator + Evidence Location pipeline. Compares the multi-agent pipeline against zero-shot LLM baselines across multiple models.
+Run the full main experiment with the primary model (`qwen-plus`). This invokes real LLM APIs, so ensure your API keys are configured in `.env`:
 
 ```bash
-cd src/experiment
-python pipeline_evaluator.py \
-    --samples-files data/focus_android_samples.json data/signal_android_samples.json \
-    --repo-paths data/repo_data/focus-android data/repo_data/Signal-Android \
-    --all-models qwen-plus \
-    --output-dir experiment_results/pipeline \
-    --output-name pipeline_eval \
-    --no-cache \
-    --parallel-workers 4
+uv run python -m experiment.main_experiment
 ```
 
-**Output:** `src/experiment/experiment_results/pipeline/`
-
-### Experiment 3: Value Profile Evaluation
-
-Three sub-experiments evaluating the Value Profile component:
-
-1. **Profile Characterization**: Case study demonstrating that ValueProfile distinguishes value signatures across different projects
-2. **Cross-Model Consistency**: Evaluates agreement of profiles generated by 7 different LLMs (Kendall's W, Spearman rho, Cosine Similarity)
-3. **Bayesian Profile Calibration**: Ablation study using profile-based Bayesian posterior weighting on hypothesis confidence scores
+Limit the number of samples for a faster run:
 
 ```bash
-cd src
-python -m experiment.profile_experiment.run_all --experiments all
-
-# Run individual experiments
-python -m experiment.profile_experiment.run_all --experiments 1    # Characterization
-python -m experiment.profile_experiment.run_all --experiments 2    # Cross-Model
-python -m experiment.profile_experiment.run_all --experiments 3    # Bayesian Calibration
+uv run python -m experiment.main_experiment --max-samples 50
 ```
 
-**Options:**
-- `--force-api`: Force fresh LLM API calls (bypass cache)
-- `--output-dir DIR`: Override output directory
-- `--tables-dir DIR`: Override value model tables directory
+Run cross-model validation with additional models:
 
-**Output:** `src/experiment/experiment_results/profile/`
+```bash
+uv run python -m experiment.main_experiment --validation-models deepseek-chat grok-4
+```
 
-## Value Model
+### Configuration
 
-ValueScope uses a three-layer value taxonomy:
+The main experiment uses `src/experiment/config.yaml` by default. Edit it to customize:
 
-### L2: Human Value Themes
+- `main_experiment.primary_model`: primary LLM for the full pipeline.
+- `main_experiment.validation_models`: additional models for cross-model validation.
+- `main_experiment.ablation.variants`: ablation configurations (e.g., w/o Profile, w/o Evidence, different alpha values).
+- `main_experiment.profile.cache_dir`: profile cache directory.
+- `main_experiment.llm_only.iaa_cache_dir`: IAA LLM-output cache used by the LLM-only baseline.
+- `output.output_dir`: unified output root (default: `experiment_outputs`).
 
-| ID | Theme | Description |
-|----|-------|-------------|
-| HV1 | Conformity | Following rules, meeting expectations |
-| HV2 | Pleasure | User enjoyment, satisfaction |
-| HV3 | Dignity | Respect for users, ethical treatment |
-| HV4 | Inclusiveness | Accessibility, supporting diverse users |
-| HV5 | Sense of Belonging | Community, connection |
-| HV6 | Freedom | User autonomy, choice |
-| HV7 | Independence | Self-sufficiency, not locked-in |
-| HV8 | Wealth | Economic value, efficiency |
-| HV9 | Privacy | Data protection, user control over information |
-| HV10 | Security | Safety, protection from harm |
+### What the Main Experiment Does
 
-### L3: System Value Themes
+1. **Builds the benchmark** from a single unified code-scenario file and text issue discussions.
+2. **Loads project value profiles** from the profile cache.
+3. **Runs baselines**:
+   - Human (ground truth)
+   - LLM-only zero-shot (reuses IAA cache)
+   - Traditional baselines (TF-IDF / BM25 / BERT zero-shot)
+4. **Runs ValueGuard variants**:
+   - Full pipeline (real profile + hypothesis + evidence)
+   - w/o Profile (uniform prior)
+   - w/o Evidence (real profile, no verification)
+   - Additional ablations configured in `config.yaml`
+5. **Computes metrics** for risk detection (Dim1) and value identification (Dim2).
+6. **Performs statistical tests** (McNemar, Wilcoxon signed-rank, bootstrap CI) and reports component contributions.
 
-| ID | Theme | Description |
-|----|-------|-------------|
-| SV1 | Trust | Reliability of the system |
-| SV2 | Correctness | Accuracy, bug-free operation |
-| SV3 | Compatibility | Works with other systems |
-| SV4 | Portability | Works across platforms |
-| SV5 | Reliability | Consistent operation |
-| SV6 | Efficiency | Performance, resource usage |
-| SV7 | Energy Preservation | Green computing |
-| SV8 | Usability | Ease of use |
-| SV9 | Accessibility | Support for users with disabilities |
-| SV10 | Longevity | Long-term maintainability |
+### Expected Output
 
-## Configuration
+Results are written to `experiment_outputs/results/main_exp/`:
 
-Experiment configuration is centralized in `src/experiment/config.yaml`:
+```
+experiment_outputs/results/main_exp/
+├── benchmark.json                 # Unified benchmark samples
+├── main_results.json              # Per-method results
+├── metrics_summary.md             # Human-readable metrics summary
+├── ablation_summary.md            # Ablation contribution table
+├── statistical_tests.json         # Statistical test results
+├── variant_{name}.json            # Per-variant detailed results
+└── figures/                       # Generated plots
+```
 
-- `llm_models`: LLM provider configurations (API endpoints, keys, parameters)
-- `datasets`: Input data sources for experiments
-- `prompts`: LLM prompt templates for value risk identification
-- `iaa_experiment`: IAA experiment settings (annotators, metrics, output paths)
-- `pipeline_experiment`: Pipeline evaluation settings (agent configs, repos, sample extraction)
-- `profile_experiment`: Profile experiment settings (sub-experiment configs, repos, cache)
+Logs are written to `experiment_outputs/logs/main_experiment_*.log`.
+
+### Interpreting the Results
+
+The summary Markdown files report:
+
+- **Dim1 (Risk Detection)**: Precision, Recall, F1, Cohen's κ, PABAK, Gwet's AC1.
+- **Dim2 (Value Identification)**: Micro Precision/Recall/F1, Pairwise Jaccard, Symmetric F1.
+- **Ablation Contribution**: ΔF1, Δκ, ΔJaccard, ΔSym-F1 when removing Profile or Evidence.
+- **Cross-Model Validation**: consistency of ValueGuard improvements across different LLMs.
+
+Higher κ and Jaccard indicate stronger agreement with human annotations. Positive ablation deltas indicate that the removed component was beneficial.
+
+## Other Experiments
+
+### IAA Experiment
+
+Measures inter-annotator agreement between human annotations and LLM annotators.
+
+```bash
+uv run python -m experiment.iaa_experiment --config src/experiment/config.yaml
+```
+
+Output: `experiment_outputs/results/iaa/`
+
+### Profile Experiment
+
+Characterizes project value profiles and evaluates cross-model consistency and downstream impact.
+
+```bash
+uv run python -m experiment.profile_experiment.run_all --experiments all
+```
+
+Output: `experiment_outputs/results/profile/`
+
+### Pipeline Experiment
+
+Standalone pipeline evaluation on commit samples. It can read the unified `code_scenarios.json` directly; only samples that contain `diff_hunks_data` are evaluated.
+
+```bash
+uv run python -m experiment.pipeline_evaluator \
+    --samples-file src/experiment/data/code_scenarios.json \
+    --repo-dir src/experiment/data/repos \
+    --mock --max-samples 10
+```
+
+Output: `experiment_outputs/results/pipeline/`
+
+## Unified Output Layout
+
+All experiments write to `experiment_outputs/`:
+
+```
+experiment_outputs/
+├── results/
+│   ├── main_exp/                  # Main experiment results
+│   ├── iaa/                       # IAA experiment results
+│   ├── pipeline/                  # Pipeline experiment results
+│   └── profile/                   # Profile experiment results
+├── logs/                          # Experiment logs
+└── cache/
+    ├── llm_outputs/               # LLM response caches
+    │   ├── pipeline_cache/
+    │   ├── text_pipeline_cache/
+    │   └── gt_annotation_cache/
+    └── profile_cache/             # Value profile caches
+```
+
+## Citation
+
+If you use this code in your research, please cite the associated paper.
+
+## Support
+
+For questions or issues, please open an issue in the repository.

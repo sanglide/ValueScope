@@ -83,6 +83,22 @@ class HypothesisAgent(BaseAgent):
         super().__init__(skills, memory, config)
         self._llm_provider = self.get_config("llm_provider", "deepseek")
         self._max_hypotheses = self.get_config("max_hypotheses", 10)
+        # profile_alpha 控制 repo value profile 对假说排序的加权强度
+        # 0.0 = 无 profile 影响（类似 uniform prior）
+        # 1.0 = 默认强度（score *= 1 + profile_weight）
+        self._profile_alpha = float(self.get_config("profile_alpha", 1.0))
+        # profile 使用模式："rank"（原始乘法排序）或 "threshold"（双向阈值约束）
+        # threshold 模式：高 profile value → 降低报告阈值（更敏感）
+        #                 低 profile value → 提高报告阈值（更严格）
+        self._profile_threshold_mode = self.get_config("profile_threshold_mode", "rank")
+        # 阈值敏感度：控制 profile 对阈值的影响幅度
+        self._threshold_sensitivity = float(self.get_config("threshold_sensitivity", 0.4))
+        # 基础置信度阈值
+        self._base_threshold = 0.5
+        # 是否在 prompt 中注入 profile（P2: 后验过滤模式）
+        # True: 将 profile 信息注入 prompt，引导 LLM 关注高 profile value
+        # False: 不注入 profile，LLM 客观分析代码，profile 仅用于后验过滤/排序
+        self._profile_prompt_injection = self.get_config("profile_prompt_injection", True)
 
     def execute(self, task: HypothesisTask) -> list[ValueHypothesis]:
         """Generate value hypotheses for code changes.
@@ -134,7 +150,7 @@ class HypothesisAgent(BaseAgent):
 
             raw_text = response.raw_response or ""
 
-            # Detect content safety refusal (natural language reply, not JSON)
+            # 检测内容安全拒绝（自然语言回复，非JSON）
             REFUSAL_PATTERNS = ["i can't discuss", "i cannot discuss", "i'm unable to", "i can't help"]
             if any(p in raw_text.lower() for p in REFUSAL_PATTERNS):
                 logger.warning(f"  [HYPOTHESIS] LLM refused to analyze (safety filter): {raw_text[:100]!r}")
@@ -183,26 +199,30 @@ class HypothesisAgent(BaseAgent):
         """Build the analysis prompt with context."""
         parts = []
 
-        # Project profile context
-        parts.append("## Project Value Profile")
-        if profile.core_values:
-            parts.append(f"Core values: {', '.join(profile.core_values)}")
+        # Project profile context（仅当 profile_prompt_injection=True 时注入）
+        if self._profile_prompt_injection:
+            parts.append("## Project Value Profile")
+            if profile.core_values:
+                parts.append(f"Core values: {', '.join(profile.core_values)}")
 
-        if profile.l2_scores:
-            top_l2 = sorted(
-                profile.l2_scores.items(), key=lambda x: x[1], reverse=True
-            )[:5]
-            parts.append(
-                "Top L2 values: " + ", ".join(f"{k}({v:.2f})" for k, v in top_l2)
-            )
+            if profile.l2_scores:
+                top_l2 = sorted(
+                    profile.l2_scores.items(), key=lambda x: x[1], reverse=True
+                )[:5]
+                parts.append(
+                    "Top L2 values: " + ", ".join(f"{k}({v:.2f})" for k, v in top_l2)
+                )
 
-        if profile.l3_scores:
-            top_l3 = sorted(
-                profile.l3_scores.items(), key=lambda x: x[1], reverse=True
-            )[:5]
-            parts.append(
-                "Top L3 values: " + ", ".join(f"{k}({v:.2f})" for k, v in top_l3)
-            )
+            if profile.l3_scores:
+                top_l3 = sorted(
+                    profile.l3_scores.items(), key=lambda x: x[1], reverse=True
+                )[:5]
+                parts.append(
+                    "Top L3 values: " + ", ".join(f"{k}({v:.2f})" for k, v in top_l3)
+                )
+        else:
+            # 后验过滤模式：不注入 profile，让 LLM 客观分析
+            logger.debug("Profile prompt injection disabled — objective analysis mode")
 
         # Memory patterns context
         if memory_patterns:
@@ -245,7 +265,25 @@ class HypothesisAgent(BaseAgent):
         for raw in raw_hypotheses:
             # Skip low confidence
             confidence = float(raw.get("confidence", 0.0))
-            if confidence < 0.5:
+
+            # 根据的模式计算动态阈值
+            value_id = raw.get("value_id", "")
+            profile_weight = max(
+                profile.l2_scores.get(value_id, 0.0),
+                profile.l3_scores.get(value_id, 0.0),
+            )
+
+            if self._profile_threshold_mode == "threshold":
+                # 双向阈值约束：
+                # high profile → lower threshold（更敏感，低置信度也能报告）
+                # low profile → higher threshold（更严格，需要高置信度才报告）
+                threshold = self._base_threshold + (0.5 - profile_weight) * self._threshold_sensitivity
+                threshold = max(0.1, min(0.9, threshold))  # clamp to [0.1, 0.9]
+            else:
+                # 原始模式：固定阈值
+                threshold = self._base_threshold
+
+            if confidence < threshold:
                 continue
 
             # Parse cross-layer trace
@@ -260,12 +298,7 @@ class HypothesisAgent(BaseAgent):
                     reasoning=trace_data.get("reasoning", ""),
                 )
 
-            # Compute profile weight
-            value_id = raw.get("value_id", "")
-            profile_weight = max(
-                profile.l2_scores.get(value_id, 0.0),
-                profile.l3_scores.get(value_id, 0.0),
-            )
+            # profile_weight 已在阈值计算阶段获得，复用
 
             hypothesis = ValueHypothesis(
                 id=str(uuid.uuid4())[:8],
@@ -293,8 +326,9 @@ class HypothesisAgent(BaseAgent):
             score = h.confidence
 
             # Boost by profile weight (values important to the project)
-            if h.profile_weight > 0:
-                score *= 1.0 + h.profile_weight
+            # profile_alpha 控制强度；0.0 时完全忽略 profile
+            if h.profile_weight > 0 and self._profile_alpha != 0.0:
+                score *= 1.0 + self._profile_alpha * h.profile_weight
 
             # Boost by severity
             severity_boost = {
