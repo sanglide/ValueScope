@@ -1,12 +1,12 @@
 # ValueScope: Profile-Guided Value Risk Identification
 
-This repository contains the implementation and evaluation code for **ValueGuard**, a profile-guided, evidence-verified approach to identifying human-value risks in software engineering artifacts (code changes and issue discussions).
+This repository contains the implementation and evaluation code for **ValueScope**, a profile-guided, evidence-verified approach to identifying human-value risks in software engineering artifacts (code changes and issue discussions).
 
 ## Research Question
 
-> To what extent does profile-guided, evidence-verified value risk identification (ValueGuard) improve agreement with human annotations compared to zero-shot LLM baselines, and what is the contribution of each pipeline component?
+> To what extent does profile-guided, evidence-verified value risk identification (ValueScope) improve agreement with human annotations compared to zero-shot LLM baselines, and what is the contribution of each pipeline component?
 
-- **RQ1 (Effectiveness)**: Does ValueGuard agree with human annotations significantly better than LLM-only zero-shot classification?
+- **RQ1 (Effectiveness)**: Does ValueScope agree with human annotations significantly better than LLM-only zero-shot classification?
 - **RQ2 (Component Contribution)**: How much do the project-value profile and the evidence-verification step each contribute?
 - **RQ3 (Generalization)**: Are the conclusions stable across different LLM backbones?
 
@@ -27,7 +27,7 @@ This repository contains the implementation and evaluation code for **ValueGuard
 │   │   ├── report_generator.py
 │   │   ├── iaa_report_generator.py
 │   │   └── profile_experiment/      # Value-profile characterization experiments
-│   └── valueguard/                  # Core ValueGuard framework
+│   └── valueguard/                  # Core ValueScope framework
 ├── tables/                          # Value model definitions (L2/L3 themes)
 ├── experiment_outputs/              # All experiment outputs (created at runtime)
 ├── .env                             # API keys
